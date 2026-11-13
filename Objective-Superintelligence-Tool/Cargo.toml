@@ -1,0 +1,37 @@
+[package]
+name = "objective-superintelligence-tool"
+version = "0.1.0"
+edition = "2024"
+authors = ["Diverge <admin@diverge.network>"]
+description = "The Diverge tool container beneath Objective-Superintelligence-Agent: puts one structured decision to a list of agents and returns each one's answer"
+license = "MIT"
+repository = "https://github.com/divergenetwork/Objective-Superintelligence"
+publish = false
+
+[[bin]]
+name = "objective-superintelligence-tool"
+path = "src/main.rs"
+
+[dependencies]
+# The SDK, at one commit of Diverge: the container's contract with the
+# proxy beside it (registration, secrets, the daemon), the grant the
+# tool declares, and the daemon's `agents message` with its watch.
+diverge-sdk = { git = "https://github.com/divergenetwork/Diverge.git", rev = "c4a9f8d67210c723f267f0a1725041f1afd85e45" }
+# The program's door: an HTTP server on the loopback the proxy dials,
+# `/register`, the secrets' two paths, and the MCP server at `/mcp`.
+axum = { version = "0.8.9" }
+# The MCP server, over Streamable HTTP; the same version the SDK's
+# content blocks are written against.
+rmcp = { version = "3.1.2", default-features = false, features = ["server", "transport-streamable-http-server"] }
+# The tool's parameters state their own JSON Schema; `--schema`
+# states the arguments'.
+schemars = { version = "1.2.2" }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.151", features = ["preserve_order"] }
+# A watched message's stream, and every agent asked at once.
+futures-util = { version = "0.3.33", default-features = false, features = ["std"] }
+# An agent's answers, by question, in the order it gave them.
+indexmap = { version = "2.14.0", features = ["serde"] }
+# The runtime under the listener and the lazily made daemon
+# connection.
+tokio = { version = "1.53.1", default-features = false, features = ["macros", "net", "rt-multi-thread", "sync"] }
