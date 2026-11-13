@@ -1,48 +1,39 @@
-//! `objective-superintelligence-tool`, as a tool container: one
-//! structured decision, put to a list of agents.
+//! `agent`, as an agent container: a
+//! structured decision, answered with the weighted average of other
+//! agents' answers.
 //!
-//! The tool is made with a list of agents, each by its template and
-//! index. Its one MCP tool, `structured_decisions`, takes a decision
-//! — a prompt and typed questions — sends it to every one of those
-//! agents through the daemon, watching each, and returns what each
-//! answered, or that it failed. It weighs nothing and averages
-//! nothing: that is the work of the agent that depends on it,
-//! Objective-Superintelligence-Agent.
+//! The agent is made with a list of agents, each with a weight. It
+//! takes structured decisions and nothing else. For each one it calls
+//! its one dependency tool, the Objective-Superintelligence tool, which
+//! puts the same decision to every one of those agents and returns
+//! what each answered; the agent then answers every question with the
+//! average of their answers, each weighed by its agent's weight.
 //!
 //! The program is an HTTP server on the container's loopback, at the
 //! port [`diverge_sdk::container_proxy::inside::port()`] names, and
 //! the proxy beside it is its only caller: `POST /register` once,
 //! `POST /secrets` and `POST /secrets/collect` around every activation
-//! (the tool takes no secret), and the MCP server at `/mcp`.
-//! `--schema`, the program's one argument, prints the JSON Schema of
-//! the arguments it takes, which is the `schema` of the image's
-//! `/DIVERGE.md` frontmatter.
-//!
-//! # Nothing of the proxy's is counted on at the start
-//!
-//! The host injects the proxy at runtime, and it may not be up when
-//! the program starts. So the daemon is reached when a call first
-//! needs it, and kept.
+//! (the agent takes no secret), `POST /run`, which is one decision,
+//! and `POST /enqueue`, which is chat and is refused. `--schema`, the
+//! program's one argument, prints the JSON Schema of the arguments it
+//! takes, which is the `schema` of the image's `/DIVERGE.md`
+//! frontmatter.
 
 mod arguments;
-mod ask;
-mod daemon;
+mod average;
+mod dependency;
 mod failure;
 mod outcome;
-mod permissions;
 mod register;
+mod run;
 mod secrets;
-mod server;
-mod structured_decisions;
+mod tool;
 
 use std::io::Write as _;
-use std::sync::Arc;
 
-use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
-use rmcp::transport::{StreamableHttpServerConfig, StreamableHttpService};
+use diverge_sdk::container_proxy::inside::Client;
 
 use crate::arguments::Arguments;
-use crate::server::Server;
 
 /// The program: the server, or — on `--schema` — the schema.
 ///
@@ -57,7 +48,7 @@ fn main() {
         (None, None) => {}
         (Some(argument), None) if argument == "--schema" => return schema(),
         _ => {
-            let _ = writeln!(std::io::stderr(), "usage: objective-superintelligence-tool [--schema]");
+            let _ = writeln!(std::io::stderr(), "usage: agent [--schema]");
             std::process::exit(2);
         }
     }
@@ -84,16 +75,17 @@ fn schema() {
 
 /// The server, for the container's life, bound on the loopback: the
 /// proxy is the only thing that dials it, and it is beside it. Every
-/// MCP session the proxy opens shares one [`Server`], so the daemon
-/// connection is made once.
+/// run shares one [`Client`], so the MCP session with the proxy is
+/// made once, when a run first needs it.
 async fn serve() {
-    let server = Server::default();
-    let mcp = StreamableHttpService::new(move || Ok(server.clone()), Arc::new(LocalSessionManager::default()), StreamableHttpServerConfig::default());
+    let client = std::sync::Arc::new(Client::new());
     let app = axum::Router::new()
         .route("/register", axum::routing::post(register::register))
         .route("/secrets", axum::routing::post(secrets::feed))
         .route("/secrets/collect", axum::routing::post(secrets::collect))
-        .nest_service("/mcp", mcp);
+        .route("/run", axum::routing::post(run::run))
+        .route("/enqueue", axum::routing::post(run::enqueue))
+        .with_state(client);
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", diverge_sdk::container_proxy::inside::port())).await.expect("the port could not be bound");
     axum::serve(listener, app).await.expect("the server stopped unexpectedly");
 }

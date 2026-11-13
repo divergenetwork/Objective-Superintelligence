@@ -1,4 +1,4 @@
-# The Objective-Superintelligence-Tool image: a musl binary on Alpine.
+# The Objective-Superintelligence tool image: a musl binary on Alpine.
 #
 # The container proxy is NOT in this image. The host injects it at
 # runtime.
@@ -31,7 +31,7 @@ RUN cargo build --release --locked
 # alpine:latest, by digest.
 FROM docker.io/library/alpine@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
 
-COPY --from=build /build/target/release/objective-superintelligence-tool /usr/local/bin/objective-superintelligence-tool
+COPY --from=build /build/target/release/tool /usr/local/bin/tool
 
 # The image's arguments schema and its description, read by the proxy.
 COPY DIVERGE.md /DIVERGE.md
@@ -40,4 +40,4 @@ COPY DIVERGE.md /DIVERGE.md
 # names. Nothing is exposed: the proxy the host injects is the only
 # thing that dials it, and it is beside it.
 
-ENTRYPOINT ["/usr/local/bin/objective-superintelligence-tool"]
+ENTRYPOINT ["/usr/local/bin/tool"]

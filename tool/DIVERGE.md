@@ -4,7 +4,7 @@
   "schema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Arguments",
-    "description": "The arguments the tool is made with: the agents every decision is\nput to.\n\n# How it runs\n\nAs a dependency tool of Objective-Superintelligence-Agent, which\ndeclares it with its own agents, weights left out. The tool asks\nthe daemon for one thing: `message` over exactly the agents\nlisted here.",
+    "description": "The arguments the tool is made with: the agents every decision is\nput to.\n\n# How it runs\n\nAs a dependency tool of the Objective-Superintelligence agent, which\ndeclares it with its own agents, weights left out. The tool asks\nthe daemon for one thing: `message` over exactly the agents\nlisted here.",
     "type": "object",
     "properties": {
       "agents": {
@@ -50,7 +50,7 @@
 
 Puts one structured decision to a fixed list of agents and returns what
 each one answered. It is the dependency tool of
-Objective-Superintelligence-Agent, which does the weighing; this tool
+the Objective-Superintelligence agent, which does the weighing; this tool
 weighs nothing.
 
 ## Arguments

@@ -12,8 +12,8 @@ Two container images, built from the two folders here:
 
 | image | what it is |
 |---|---|
-| [`Objective-Superintelligence-Agent`](Objective-Superintelligence-Agent/DIVERGE.md) | The agent. Made with a list of agents and a weight for each. Takes structured decisions only, no chat. |
-| [`Objective-Superintelligence-Tool`](Objective-Superintelligence-Tool/DIVERGE.md) | The agent's one dependency tool. Puts a decision to every one of those agents and returns each one's answer, or that it failed. |
+| [`agent`](agent/DIVERGE.md) | The agent. Made with a list of agents and a weight for each. Takes structured decisions only, no chat. |
+| [`tool`](tool/DIVERGE.md) | The agent's one dependency tool. Puts a decision to every one of those agents and returns each one's answer, or that it failed. |
 
 ## How a decision is answered
 
@@ -42,7 +42,7 @@ A weight is any number greater than zero. The tool is declared by the
 agent itself, with the same agents; you do not create or attach it.
 
 Every agent listed must itself accept structured decisions. An agent
-listed may be another Objective-Superintelligence-Agent.
+listed may be another Objective-Superintelligence agent.
 
 ## Building
 

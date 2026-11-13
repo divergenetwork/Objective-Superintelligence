@@ -6,7 +6,7 @@ use serde_json::json;
 
 use crate::arguments::Arguments;
 
-/// The image of Objective-Superintelligence-Tool this agent was built
+/// The image of the Objective-Superintelligence tool this agent was built
 /// against: its digest and where it is referenced, compiled in from
 /// `tool-image.json` beside the crate. A new tool image is a new
 /// digest there, and a new build of this agent.
@@ -19,7 +19,7 @@ const MEMORY: u64 = 268_435_456;
 const DISK: u64 = 268_435_456;
 
 /// The agent's one dependency, the same at every registration but for
-/// the agents it carries: Objective-Superintelligence-Tool, made with
+/// the agents it carries: the Objective-Superintelligence tool, made with
 /// this agent's own agents, their weights left out — the tool asks,
 /// and weighs nothing. Transient, with no mount and no secret: it
 /// keeps nothing, and runs while this agent's decision does.

@@ -1,15 +1,15 @@
 [package]
-name = "objective-superintelligence-tool"
+name = "tool"
 version = "0.1.0"
 edition = "2024"
 authors = ["Diverge <admin@diverge.network>"]
-description = "The Diverge tool container beneath Objective-Superintelligence-Agent: puts one structured decision to a list of agents and returns each one's answer"
+description = "The Diverge tool container beneath the Objective-Superintelligence agent: puts one structured decision to a list of agents and returns each one's answer"
 license = "MIT"
 repository = "https://github.com/divergenetwork/Objective-Superintelligence"
 publish = false
 
 [[bin]]
-name = "objective-superintelligence-tool"
+name = "tool"
 path = "src/main.rs"
 
 [dependencies]

@@ -1001,21 +1001,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "objective-superintelligence-tool"
-version = "0.1.0"
-dependencies = [
- "axum",
- "diverge-sdk",
- "futures-util",
- "indexmap",
- "rmcp",
- "schemars",
- "serde",
- "serde_json",
- "tokio",
-]
-
-[[package]]
 name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1956,6 +1941,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2334f11ee363607eb04df9b8fc8a13ca1715a72ba8662a26ac285c98aabb4011"
 dependencies = [
  "winnow",
+]
+
+[[package]]
+name = "tool"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "diverge-sdk",
+ "futures-util",
+ "indexmap",
+ "rmcp",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]

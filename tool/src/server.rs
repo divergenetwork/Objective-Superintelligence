@@ -42,7 +42,7 @@ impl Server {
 impl ServerHandler for Server {
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
-            .with_server_info(Implementation::new("objective-superintelligence-tool", env!("CARGO_PKG_VERSION")))
+            .with_server_info(Implementation::new("objective-superintelligence", env!("CARGO_PKG_VERSION")))
             .with_instructions(INSTRUCTIONS)
     }
 

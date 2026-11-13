@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// # How it runs
 ///
-/// As a dependency tool of Objective-Superintelligence-Agent, which
+/// As a dependency tool of the Objective-Superintelligence agent, which
 /// declares it with its own agents, weights left out. The tool asks
 /// the daemon for one thing: `message` over exactly the agents
 /// listed here.

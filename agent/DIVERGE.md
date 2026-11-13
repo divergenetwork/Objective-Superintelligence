@@ -87,7 +87,7 @@ matter.
 ## What it does with a decision
 
 1. Echoes the decision.
-2. Calls its dependency tool, Objective-Superintelligence-Tool, which
+2. Calls its dependency tool, the Objective-Superintelligence tool, which
    puts the same decision to every agent listed and returns each one's
    answers, or that it failed.
 3. Leaves out every agent that failed, and every agent whose answers do
@@ -110,7 +110,7 @@ modality the decision uses refuses it, and is left out as a failure.
 
 ## Dependency
 
-One, always: Objective-Superintelligence-Tool, made with this agent's
+One, always: the Objective-Superintelligence tool, made with this agent's
 own agents (weights left out), transient, 256 MiB of memory and of
 disk, with no mount and no secret. Its image is fixed in this image.
 The tool declares `message` over exactly those agents, which is all

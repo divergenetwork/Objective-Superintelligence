@@ -1,5 +1,5 @@
 [package]
-name = "objective-superintelligence-agent"
+name = "agent"
 version = "0.1.0"
 edition = "2024"
 authors = ["Diverge <admin@diverge.network>"]
@@ -9,7 +9,7 @@ repository = "https://github.com/divergenetwork/Objective-Superintelligence"
 publish = false
 
 [[bin]]
-name = "objective-superintelligence-agent"
+name = "agent"
 path = "src/main.rs"
 
 [dependencies]
