@@ -1,0 +1,42 @@
+[package]
+name = "objective-superintelligence-agent"
+version = "0.1.0"
+edition = "2024"
+authors = ["Diverge <admin@diverge.network>"]
+description = "A Diverge agent container that answers a structured decision with the weighted average of other agents' answers"
+license = "MIT"
+repository = "https://github.com/divergenetwork/Objective-Superintelligence"
+publish = false
+
+[[bin]]
+name = "objective-superintelligence-agent"
+path = "src/main.rs"
+
+[dependencies]
+# The SDK, at one commit of Diverge: the container's contract with the
+# proxy beside it (registration, secrets, the run, the MCP session),
+# the dependency it declares, and the chunks a run is made of.
+diverge-sdk = { git = "https://github.com/divergenetwork/Diverge.git", rev = "c4a9f8d67210c723f267f0a1725041f1afd85e45" }
+# The run as a generator of events.
+async-stream = { version = "0.3.6" }
+# The program's door: an HTTP server on the loopback the proxy dials,
+# `/register`, the secrets' two paths, `/run` as server-sent events,
+# and `/enqueue`, refused.
+axum = { version = "0.8.9" }
+# The dependency tool, called over the proxy's MCP; the same version
+# and features the agent images use.
+rmcp = { version = "3.1.2", default-features = false, features = ["client", "transport-streamable-http-client-reqwest"] }
+# `--schema` states the arguments'.
+schemars = { version = "1.2.2" }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.151", features = ["preserve_order"] }
+# The run's stream.
+futures-util = { version = "0.3.33", default-features = false, features = ["std"] }
+# The answers, by question, in the questions' order.
+indexmap = { version = "2.14.0", features = ["serde"] }
+# The numbers an answer is made of, and the weights they are averaged
+# by: the SDK's own decimal, so nothing is rounded through a float on
+# the way.
+rust_decimal = { version = "1.40.0", features = ["serde-float"] }
+# The runtime under the listener.
+tokio = { version = "1.53.1", default-features = false, features = ["macros", "net", "rt-multi-thread", "sync"] }

@@ -1,0 +1,4 @@
+{
+  "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "references": [{ "registry": "docker.io", "name": "diverge-local/objective-superintelligence-tool" }]
+}
