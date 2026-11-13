@@ -8,6 +8,11 @@
       "audio": true,
       "file": true
     },
+    "instruction_modalities": {
+      "image": true,
+      "audio": true,
+      "file": true
+    },
     "choice_modalities": {
       "image": true,
       "audio": true,
@@ -104,7 +109,8 @@ matter.
 
 ## Modalities
 
-Every modality is accepted, in the prompt and in the choices: the
+Every modality is accepted, in the prompt, in the instructions and in
+the choices: the
 decision is passed on as it came. An agent listed that does not take a
 modality the decision uses refuses it, and is left out as a failure.
 
