@@ -1,6 +1,6 @@
 ---
 {
-  "name": "Objective-Superintelligence-Tool",
+  "name": "Objective-Superintelligence",
   "schema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Arguments",
@@ -46,7 +46,7 @@
   }
 }
 ---
-# Objective-Superintelligence-Tool
+# Objective-Superintelligence: the tool
 
 Puts one structured decision to a fixed list of agents and returns what
 each one answered. It is the dependency tool of

@@ -1,6 +1,6 @@
 ---
 {
-  "name": "Objective-Superintelligence-Agent",
+  "name": "Objective-Superintelligence",
   "chat": false,
   "structured_decisions": {
     "prompt_modalities": {
@@ -66,7 +66,7 @@
   }
 }
 ---
-# Objective-Superintelligence-Agent
+# Objective-Superintelligence: the agent
 
 Answers a structured decision with the weighted average of other
 agents' answers. It takes structured decisions only: it has no chat.
