@@ -7,9 +7,11 @@ use serde_json::json;
 use crate::arguments::Arguments;
 
 /// The image of the Objective-Superintelligence tool this agent was built
-/// against: its digest and where it is referenced, compiled in from
-/// `tool-image.json` beside the crate. A new tool image is a new
-/// digest there, and a new build of this agent.
+/// against: its digest, compiled in from `tool-image.json` beside the
+/// crate. No registry is named: the image is one the daemon holds in
+/// its Store on a provider, built there with `images build`, and is
+/// found by its digest. A new tool image is a new digest there, and a
+/// new build of this agent.
 const TOOL_IMAGE: &str = include_str!("../tool-image.json");
 
 /// The memory the tool's container is given, in bytes: 256 MiB.
