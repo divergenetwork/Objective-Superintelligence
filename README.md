@@ -46,6 +46,22 @@ listed may be another Objective-Superintelligence agent.
 
 ## Building
 
-Each folder is a Rust crate with its own `Containerfile`, built from
-that folder. The tool is built first: the agent's `tool-image.json`
-holds the tool image's digest, and is compiled into the agent.
+Each folder is a Rust crate with its own `Containerfile`, whose build
+context is that folder. Build the tool first, with Diverge itself:
+
+```bash
+diverge run images build '{"provider": <provider identity>,
+  "containerfile": "<the text of tool/Containerfile>",
+  "context": {"volume": "<a volume holding this repository>", "path": ["tool"]}}'
+# … {"built":{"digest":"sha256:…","bytes":…}}
+```
+
+Put that digest in `agent/tool-image.json`, which is compiled into the
+agent, and build the agent the same way with `"path": ["agent"]`. The
+agent's digest is what an agent template names.
+
+As committed, `agent/tool-image.json` names the tool image built from
+this revision's `tool/`:
+`sha256:4f7386f7cb6cd8cc7bab7f6e2a05b630b399de959ef24a00e48adf3948f9b1ba`.
+A digest is only usable on a provider whose Store holds that image, so
+on another host, build both.
