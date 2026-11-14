@@ -356,7 +356,7 @@ dependencies = [
 [[package]]
 name = "diverge-sdk"
 version = "2.3.0"
-source = "git+https://github.com/divergenetwork/Diverge.git?rev=c4a9f8d67210c723f267f0a1725041f1afd85e45#c4a9f8d67210c723f267f0a1725041f1afd85e45"
+source = "git+https://github.com/divergenetwork/Diverge.git?rev=d44d0eff4ba4d35c642fb2de7d73e904a6fa0f52#d44d0eff4ba4d35c642fb2de7d73e904a6fa0f52"
 dependencies = [
  "async-stream",
  "axum",

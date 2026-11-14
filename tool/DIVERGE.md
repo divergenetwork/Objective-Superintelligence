@@ -78,7 +78,10 @@ The result has one entry per agent, in the arguments' order:
 ```
 
 - `{"answer": {…}}`: the agent's answers by question id, as the agent
-  gave them. Nothing is checked against the questions.
+  gave them: a `noul`, or `probabilities` (by option for a choice, by
+  level for a score). The `choice` and `score` the agent's daemon
+  computed for its log are left out. Nothing is checked against the
+  questions.
 - `"failure"`: the agent gave no answer. It refused the decision, could
   not be reached, never took it up, or went idle without answering.
   Which of these is not said.

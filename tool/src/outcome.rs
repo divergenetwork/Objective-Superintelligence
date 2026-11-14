@@ -15,7 +15,8 @@ use serde::Serialize;
 #[serde(rename_all = "snake_case")]
 pub enum Outcome {
     /// The agent's answers, each by its question's id, as the agent
-    /// gave them: nothing is checked against the questions here.
+    /// gave them — probabilities, with no `choice` and no `score`:
+    /// nothing is checked against the questions here.
     Answer(IndexMap<String, Answer>),
     /// The agent gave no answer.
     Failure,

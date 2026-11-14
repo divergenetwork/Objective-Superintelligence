@@ -16,7 +16,7 @@ path = "src/main.rs"
 # The SDK, at one commit of Diverge: the container's contract with the
 # proxy beside it (registration, secrets, the daemon), the grant the
 # tool declares, and the daemon's `agents message` with its watch.
-diverge-sdk = { git = "https://github.com/divergenetwork/Diverge.git", rev = "c4a9f8d67210c723f267f0a1725041f1afd85e45" }
+diverge-sdk = { git = "https://github.com/divergenetwork/Diverge.git", rev = "d44d0eff4ba4d35c642fb2de7d73e904a6fa0f52" }
 # The program's door: an HTTP server on the loopback the proxy dials,
 # `/register`, the secrets' two paths, and the MCP server at `/mcp`.
 axum = { version = "0.8.9" }

@@ -1,10 +1,12 @@
 //! One decision, put to one agent, and what came of it.
 
+use diverge_sdk::daemon::agent_log;
 use diverge_sdk::daemon::agent_log::Item;
 use diverge_sdk::daemon::endpoints::agents::message;
 use diverge_sdk::daemon::endpoints::agents::message::client::request::{Frame, Message};
 use diverge_sdk::daemon::endpoints::agents::message::server::response;
 use diverge_sdk::daemon::endpoints::logs::server::response::Entry;
+use diverge_sdk::shared::containers::structured_decisions;
 use diverge_sdk::shared::containers::structured_decisions::Question;
 use diverge_sdk::wire::client::handle::Handle;
 use futures_util::StreamExt as _;
@@ -23,7 +25,8 @@ use crate::outcome::Outcome;
 /// 1. **The first item is the echo**: the decision as the agent took
 ///    it up, carrying the id its answer will carry.
 /// 2. **The answer is the response with the echo's id.** It is the
-///    last item the daemon sends, and it is the [`Outcome::Answer`].
+///    last item the daemon sends, and it is the [`Outcome::Answer`]:
+///    each answer as the agent said it, by [`said`].
 /// 3. **Anything else that ends the stream is a failure**: a refusal
 ///    in place of the echo (forbidden, no structured decisions,
 ///    modalities the agent does not take, an error, `dropped`), a
@@ -61,9 +64,29 @@ pub async fn ask(daemon: &Daemon, handle: &Handle, agent: &Agent, content: &[Con
         };
         match entry.item {
             Item::UserStructuredDecisions(echo) if echoed.is_none() => echoed = Some(echo.id),
-            Item::StructuredDecisionsResponse(answer) if echoed == Some(answer.id) => return Outcome::Answer(answer.chunk.decisions),
+            Item::StructuredDecisionsResponse(answer) if echoed == Some(answer.id) => {
+                return Outcome::Answer(answer.decisions.into_iter().map(|(question, kept)| (question, said(kept))).collect());
+            }
             _ => {}
         }
     }
     Outcome::Failure
+}
+
+/// An answer as the agent's program said it, out of the answer its
+/// daemon's log kept: the probabilities, and neither the `choice` nor
+/// the `score` the daemon computed from them. What this tool returns
+/// is what an agent says, so that whoever averages it averages
+/// probabilities alone, and the daemon that logs the average computes
+/// its `choice` and `score` as it does any agent's.
+fn said(kept: agent_log::Answer) -> structured_decisions::Answer {
+    match kept {
+        agent_log::Answer::Noul(noul) => structured_decisions::Answer::Noul(noul),
+        agent_log::Answer::Choice(choice) => structured_decisions::Answer::Choice(structured_decisions::Choice {
+            probabilities: choice.probabilities,
+        }),
+        agent_log::Answer::Score(score) => structured_decisions::Answer::Score(structured_decisions::Score {
+            probabilities: score.probabilities,
+        }),
+    }
 }
