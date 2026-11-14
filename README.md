@@ -24,7 +24,8 @@ Two container images, built from the two folders here:
 3. Agents that failed, or whose answers do not fit the questions, are
    left out.
 4. The agent answers each question with the weighted average of the
-   rest.
+   rest: probabilities only. The daemon adds the winning `choice` and
+   the `score` when it logs the answer.
 
 ## Making one
 
