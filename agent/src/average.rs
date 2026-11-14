@@ -22,15 +22,16 @@ use crate::outcome::Outcome;
 /// 2. **An answer fits a question** when it is there under the
 ///    question's id and is of the question's kind: for a noul, a
 ///    `noul`; for a choice, a probability for every option and for
-///    nothing else; for a score, a `score` and one probability per
-///    level. Answers under ids no question has are passed over.
+///    nothing else; for a score, one probability per level. Answers under ids no question has are passed over.
 /// 3. **The weights are those of the agents that count**, divided by
 ///    their sum: an agent left out leaves its share to the rest, in
 ///    proportion.
 /// 4. **Every number of an answer is averaged by itself**: the `noul`;
-///    each option's probability; the `score`, and each level's
-///    probability. Probabilities that sum to one in every answer sum
-///    to one in the average.
+///    each option's probability; each level's probability.
+///    Probabilities that sum to one in every answer sum to one in the
+///    average. No winning option is named and no score is stated: an
+///    answer has neither, and the daemon computes both from the
+///    averaged probabilities as it logs them.
 /// 5. **With no agent that counts there is no answer**, and with a
 ///    number too large for a decimal there is none either.
 ///
@@ -84,10 +85,6 @@ pub fn average(questions: &[Question], outcomes: &[Outcome], weights: &[Decimal]
                         .collect::<Result<_, Failure>>()?,
                 }),
                 Question::Score { id, levels, .. } => Answer::Score(Score {
-                    score: mean(&|answers| match answers.get(id)? {
-                        Answer::Score(score) => Some(score.score),
-                        _ => None,
-                    })?,
                     probabilities: (0..levels.len())
                         .map(|level| {
                             mean(&|answers| match answers.get(id)? {

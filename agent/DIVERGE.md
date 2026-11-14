@@ -102,8 +102,13 @@ matter.
    weighed by its weight, the weights of those left re-normalised:
    - `noul`: the average `noul`;
    - `choice`: the average probability of each option;
-   - `score`: the average `score`, and the average probability of each
-     level.
+   - `score`: the average probability of each level.
+
+   It names no winning option and states no score. The daemon computes
+   both from the averaged probabilities as it logs the answer: `choice`
+   is the option with the highest probability (the alphabetically first
+   on a tie), and `score` is the sum of each level's probability times
+   its position, the first level counting 0.
 5. If no agent is left, or the tool could not be called, the run ends
    with a fatal notification and no answer.
 
