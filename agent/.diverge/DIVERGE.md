@@ -1,5 +1,6 @@
 ---
 {
+  "type": "agent",
   "name": "Objective-Superintelligence",
   "chat": false,
   "structured_decisions": {
