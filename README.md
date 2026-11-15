@@ -12,8 +12,8 @@ Two container images, built from the two folders here:
 
 | image | what it is |
 |---|---|
-| [`agent`](agent/DIVERGE.md) | The agent. Made with a list of agents and a weight for each. Takes structured decisions only, no chat. |
-| [`tool`](tool/DIVERGE.md) | The agent's one dependency tool. Puts a decision to every one of those agents and returns each one's answer, or that it failed. |
+| [`agent`](agent/.diverge/DIVERGE.md) | The agent. Made with a list of agents and a weight for each. Takes structured decisions only, no chat. |
+| [`tool`](tool/.diverge/DIVERGE.md) | The agent's one dependency tool. Puts a decision to every one of those agents and returns each one's answer, or that it failed. |
 
 ## How a decision is answered
 

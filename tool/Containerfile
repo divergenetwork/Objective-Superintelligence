@@ -34,7 +34,7 @@ FROM docker.io/library/alpine@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db8
 COPY --from=build /build/target/release/tool /usr/local/bin/tool
 
 # The image's arguments schema and its description, read by the proxy.
-COPY DIVERGE.md /DIVERGE.md
+COPY .diverge /.diverge
 
 # The program's own server, on the loopback: 8080, or whatever `PORT`
 # names. Nothing is exposed: the proxy the host injects is the only

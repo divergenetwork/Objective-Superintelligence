@@ -16,7 +16,7 @@
 //! (the tool takes no secret), and the MCP server at `/mcp`.
 //! `--schema`, the program's one argument, prints the JSON Schema of
 //! the arguments it takes, which is the `schema` of the image's
-//! `/DIVERGE.md` frontmatter.
+//! `/.diverge/DIVERGE.md` frontmatter.
 //!
 //! # Nothing of the proxy's is counted on at the start
 //!
@@ -49,7 +49,7 @@ use crate::server::Server;
 /// `--schema` alone prints the JSON Schema of [`Arguments`] on stdout
 /// and exits 0; no argument is the server, for the container's life;
 /// anything else is a usage line on stderr and exit 2. The image's
-/// entrypoint never passes the argument: it exists so `/DIVERGE.md`
+/// entrypoint never passes the argument: it exists so `/.diverge/DIVERGE.md`
 /// is written from the type the registration reads.
 fn main() {
     let mut arguments = std::env::args_os().skip(1);
