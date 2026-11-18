@@ -17,7 +17,10 @@ use crate::daemon::Daemon;
 use crate::outcome::Outcome;
 
 /// Put the decision to `agent`, watching, and read what comes back to
-/// its end.
+/// its end. An agent with a `relay` is asked on the daemon its route
+/// ends at: the request carries the route, and this daemon and each
+/// after it carry the request on and the answers back, so what is
+/// read here is that daemon's stream, by the same rules.
 ///
 /// A watched message answers with the agent's log for that message,
 /// and the rules here follow the rules of that stream:
@@ -28,7 +31,8 @@ use crate::outcome::Outcome;
 ///    last item the daemon sends, and it is the [`Outcome::Answer`]:
 ///    each answer as the agent said it, by [`said`].
 /// 3. **Anything else that ends the stream is a failure**: a refusal
-///    in place of the echo (forbidden, no structured decisions,
+///    in place of the echo (forbidden, a route that could not be
+///    taken, no structured decisions,
 ///    modalities the agent does not take, an error, `dropped`), a
 ///    stream that could not be opened or broke, or a stream that ends
 ///    — as it does at the agent's going idle — with no response of
@@ -45,7 +49,7 @@ pub async fn ask(daemon: &Daemon, handle: &Handle, agent: &Agent, content: &[Con
             questions: questions.to_vec(),
         },
         watch: Some(true),
-        relay: None,
+        relay: agent.relay(),
     };
     // The cancel is held to the end and never used: letting go of it
     // early must not be what ends the watch.

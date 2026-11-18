@@ -2,7 +2,7 @@
 
 use diverge_sdk::shared::containers::dependencies::{Mode, Template};
 use diverge_sdk::shared::containers::request::Image;
-use serde_json::json;
+use serde_json::{Value, json};
 
 use crate::arguments::Arguments;
 
@@ -22,12 +22,21 @@ const DISK: u64 = 268_435_456;
 
 /// The agent's one dependency, the same at every registration but for
 /// the agents it carries: the Objective-Superintelligence tool, made with
-/// this agent's own agents, their weights left out — the tool asks,
-/// and weighs nothing. Transient, with no mount and no secret: it
+/// this agent's own agents, each with its `relay` where it has one
+/// and its weight left out — the tool asks, and weighs nothing. An
+/// agent with no `relay` is written with none, so that the tool's
+/// arguments have the one spelling its own have. Transient, with no mount and no secret: it
 /// keeps nothing, and runs while this agent's decision does.
 pub fn dependency(arguments: &Arguments) -> Result<Template, String> {
     let image: Image = serde_json::from_str(TOOL_IMAGE).map_err(|error| format!("the tool image compiled into this agent is not an image: {error}"))?;
-    let agents: Vec<_> = arguments.agents.iter().map(|agent| json!({ "template": agent.template, "index": agent.index })).collect();
+    let agents: Vec<Value> = arguments
+        .agents
+        .iter()
+        .map(|agent| match &agent.relay {
+            Some(relay) => json!({ "template": agent.template, "index": agent.index, "relay": relay }),
+            None => json!({ "template": agent.template, "index": agent.index }),
+        })
+        .collect();
     Ok(Template {
         image,
         memory: MEMORY,

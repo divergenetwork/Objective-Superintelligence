@@ -42,6 +42,17 @@ of the template it was made from and its index, with its weight:
 A weight is any number greater than zero. The tool is declared by the
 agent itself, with the same agents; you do not create or attach it.
 
+An agent on another daemon is listed with the route to that daemon,
+`relay`: the ids of the remote daemons to go through, the first one
+this daemon's (`daemons list`), as any relayed request names them. Its
+template and index are then the ones it has on that daemon:
+
+```json
+{"template": "<agent template id>", "index": 1, "weight": 1, "relay": ["<daemon id>"]}
+```
+
+An agent on this daemon has no `relay`. An empty one is refused.
+
 Every agent listed must itself accept structured decisions. An agent
 listed may be another Objective-Superintelligence agent.
 

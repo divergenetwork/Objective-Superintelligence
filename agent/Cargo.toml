@@ -16,7 +16,7 @@ path = "src/main.rs"
 # The SDK, at one commit of Diverge: the container's contract with the
 # proxy beside it (registration, secrets, the run, the MCP session),
 # the dependency it declares, and the chunks a run is made of.
-diverge-sdk = { git = "https://github.com/divergenetwork/Diverge.git", rev = "d44d0eff4ba4d35c642fb2de7d73e904a6fa0f52" }
+diverge-sdk = { git = "https://github.com/divergenetwork/Diverge.git", rev = "f6bd116a815bb0c32b82966d4552961ea9235ca3" }
 # The run as a generator of events.
 async-stream = { version = "0.3.6" }
 # The program's door: an HTTP server on the loopback the proxy dials,
@@ -25,18 +25,18 @@ async-stream = { version = "0.3.6" }
 axum = { version = "0.8.9" }
 # The dependency tool, called over the proxy's MCP; the same version
 # and features the agent images use.
-rmcp = { version = "3.1.2", default-features = false, features = ["client", "transport-streamable-http-client-reqwest"] }
+rmcp = { version = "3.11.0", default-features = false, features = ["client", "transport-streamable-http-client-reqwest"] }
 # `--schema` states the arguments'.
-schemars = { version = "1.2.2" }
+schemars = { version = "1.2.3" }
 serde = { version = "1.0.229", features = ["derive"] }
-serde_json = { version = "1.0.151", features = ["preserve_order"] }
+serde_json = { version = "1.0.154", features = ["preserve_order"] }
 # The run's stream.
-futures-util = { version = "0.3.33", default-features = false, features = ["std"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["std"] }
 # The answers, by question, in the questions' order.
-indexmap = { version = "2.14.0", features = ["serde"] }
+indexmap = { version = "2.14.2", features = ["serde"] }
 # The numbers an answer is made of, and the weights they are averaged
 # by: the SDK's own decimal, so nothing is rounded through a float on
 # the way.
-rust_decimal = { version = "1.40.0", features = ["serde-float"] }
+rust_decimal = { version = "1.43.0", features = ["serde-float"] }
 # The runtime under the listener.
-tokio = { version = "1.53.1", default-features = false, features = ["macros", "net", "rt-multi-thread", "sync"] }
+tokio = { version = "1.54.1", default-features = false, features = ["macros", "net", "rt-multi-thread", "sync"] }

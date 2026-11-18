@@ -41,7 +41,7 @@
     ],
     "$defs": {
       "Agent": {
-        "description": "One agent asked: the template it was made from and its index among\nthe agents made from that template, which together name it once\nand for all, and its weight.",
+        "description": "One agent asked: the template it was made from and its index among\nthe agents made from that template, which together name it once\nand for all on the daemon that holds it; that daemon, where it is\nanother; and its weight.",
         "type": "object",
         "properties": {
           "template": {
@@ -53,6 +53,14 @@
             "type": "integer",
             "format": "uint64",
             "minimum": 0
+          },
+          "relay": {
+            "description": "The daemon the agent is on, where it is not this one: the route\nto it, as a request's `relay` is. The first ID is this\ndaemon's record of a remote daemon, and each ID after it is the\nrecord the daemon before it keeps of the next; the agent is on\nthe daemon the route ends at, and `template` and `index` are\nthat daemon's. Left out for an agent on this daemon; never\nempty.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/DaemonId"
+            },
+            "minItems": 1
           },
           "weight": {
             "description": "How much this agent's answer counts beside the others': a\nnumber greater than zero. Only the proportions matter: weights\nof 1 and 3 average as weights of 0.25 and 0.75 do.",
@@ -67,6 +75,11 @@
           "index",
           "weight"
         ]
+      },
+      "DaemonId": {
+        "type": "string",
+        "pattern": "^[0-9A-Za-z]{1,11}$",
+        "description": "A remote daemon's record, by the hash of what it reaches and as whom: base62, the shortest form."
       }
     }
   }
@@ -82,13 +95,22 @@ agents' answers. It takes structured decisions only: it has no chat.
 ```json
 {"agents": [
   {"template": "<agent template id>", "index": 1, "weight": 3},
-  {"template": "<agent template id>", "index": 2, "weight": 1}
+  {"template": "<agent template id>", "index": 2, "weight": 1},
+  {"template": "<agent template id>", "index": 1, "weight": 1, "relay": ["<daemon id>"]}
 ]}
 ```
 
 The agents asked, each by its template and index, each with a `weight`
 greater than zero. At least one. Only the proportions of the weights
 matter.
+
+An agent on another daemon carries `relay`: the route to that daemon,
+as every daemon request's `relay` is. The first id is this daemon's
+record of a remote daemon (`daemons list`), and each id after it is
+the record the daemon before it keeps of the next. `template` and
+`index` are then the agent's on the daemon the route ends at. An agent
+on this daemon has no `relay`: an empty one, or `null`, is refused, so
+that one list of agents is one template.
 
 ## What it does with a decision
 
@@ -119,11 +141,13 @@ Every modality is accepted, in the prompt, in the instructions and in
 the choices: the
 decision is passed on as it came. An agent listed that does not take a
 modality the decision uses refuses it, and is left out as a failure.
+So is an agent whose route could not be taken.
 
 ## Dependency
 
 One, always: the Objective-Superintelligence tool, made with this agent's
 own agents (weights left out), transient, 256 MiB of memory and of
 disk, with no mount and no secret. Its image is fixed in this image.
-The tool declares `message` over exactly those agents, which is all
-the access it has.
+The tool declares `message` over exactly those agents that are on
+this daemon, and `relay` over exactly the remote daemons the routes
+of the others begin at, which is all the access it has.
