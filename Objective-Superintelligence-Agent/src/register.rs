@@ -31,14 +31,15 @@ pub fn registered() -> Option<&'static Registered> {
 /// `POST /register`: arguments that are not [`Arguments`], that list
 /// no agent, or that carry a weight that is not greater than zero are
 /// `400`; a second registration, whatever it carries, is `409`;
-/// otherwise `200`, declaring the one [`dependency`] and nothing
-/// else — no secret, and no permission, which an agent has none of.
+/// otherwise `200`, declaring the one [`dependency`], of the image the
+/// arguments name as `tool`, and nothing else — no secret, and no permission, which an agent has none of.
 pub async fn register(Json(request): Json<register::request::Request>) -> Result<(StatusCode, Json<Response>), (StatusCode, Json<Value>)> {
     let refused = |error: String| (StatusCode::BAD_REQUEST, Json(json!({ "kind": "arguments", "error": error })));
     let arguments = serde_json::from_value::<Arguments>(request.arguments).map_err(|error| refused(error.to_string()))?;
     let weights = arguments.weights().map_err(refused)?;
-    let dependency = dependency().map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "kind": "image", "error": error }))))?;
-    match REGISTERED.set(Registered { agents: arguments.called(), weights }) {
+    let agents = arguments.called();
+    let dependency = dependency(arguments.tool);
+    match REGISTERED.set(Registered { agents, weights }) {
         Ok(()) => Ok((
             StatusCode::OK,
             Json(Response {

@@ -24,8 +24,6 @@ WORKDIR /build
 
 COPY Cargo.toml Cargo.lock ./
 COPY src src
-# The tool image this agent declares, compiled into the binary.
-COPY tool-image.json tool-image.json
 
 # --locked: the versions the lockfile beside the crate resolved.
 RUN cargo build --release --locked

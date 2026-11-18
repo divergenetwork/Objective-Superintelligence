@@ -1,16 +1,32 @@
-//! What the agent takes as its arguments: the agents it asks, and how
-//! much each one's answer counts.
+//! What the agent takes as its arguments: the image of its tool, the
+//! agents it asks, and how much each one's answer counts.
 
 use diverge_sdk::daemon::endpoints::daemons::DaemonId;
+use diverge_sdk::shared::containers::request::Image;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Value, json};
 
-/// The arguments the agent is made with: the agents every decision is
-/// put to, each with the weight its answer is averaged by.
+/// The arguments the agent is made with: the image of the tool it
+/// asks through, and the agents every decision is put to, each with
+/// the weight its answer is averaged by.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Arguments {
+    /// The image of the Objective-Superintelligence-Tool, which the
+    /// agent declares as its one dependency: its digest, and where
+    /// its bytes may be fetched, if anywhere.
+    ///
+    /// It is an argument, and not a part of this image, because the
+    /// tool's image holds this image's digest: the tool serves
+    /// `structured_decisions` to this image alone. Were this image to
+    /// hold the tool's digest too, each digest would be a hash over
+    /// the other, and neither image could be built. So the agent is
+    /// built first, the tool is built knowing the agent's digest, and
+    /// the tool's digest is given here. A tool built for another
+    /// agent image serves this agent `get` and `vote` only, and every
+    /// decision fails.
+    pub tool: Image,
     /// The agents asked. At least one.
     #[schemars(length(min = 1))]
     pub agents: Vec<Agent>,
