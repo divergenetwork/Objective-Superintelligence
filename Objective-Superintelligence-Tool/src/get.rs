@@ -1,24 +1,24 @@
 //! A voter's first tool: the next decision in its queue.
 
 use diverge_sdk::daemon::key;
+use diverge_sdk::shared::containers::structured_decisions::Question;
 use rmcp::model::ContentBlock;
 use schemars::JsonSchema;
 use serde::Deserialize;
-use serde_json::{Value, json};
 
 use crate::failure::Failure;
 use crate::server::State;
 use crate::store::queue;
-use crate::store::queue::Read;
 
 /// The tool's name.
 pub const NAME: &str = "get";
 
 /// The tool's description, as `tools/list` states it.
-pub const DESCRIPTION: &str = "Take the next structured decision out of your queue. It is returned as JSON, with `id`, `content` \
-and `questions`; an image, audio or a file in it is returned as a part of its own, in its place within the JSON. Each \
-decision is returned once: the next call returns the one after it, or `null` when your queue is empty. Answer a decision \
-with `vote`, giving its `id`.";
+pub const DESCRIPTION: &str = "Take the next structured decision out of your queue. It is returned as one JSON object, with \
+`id`, `content` and `questions`, written across the parts of the result: read them in order, as one text. `content`, each \
+question's `instructions`, each option's `description` and each of a score's `levels` is a quoted string, and an image, audio \
+or a file that belongs to it is a part of its own, standing inside the quotes where it belongs. Each decision is returned \
+once: the next call returns the one after it, or `null` when your queue is empty. Answer a decision with `vote`, giving its `id`.";
 
 /// The tool's parameters: none.
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
@@ -30,106 +30,161 @@ pub struct Parameters {}
 /// as it is handed over, so no call returns it again.
 pub async fn call(state: &State, caller: &key::Agent) -> Result<Vec<ContentBlock>, Failure> {
     let pool = state.store.pool(state.daemon.client()).await?;
-    match queue::next(pool, &caller.template, caller.index).await? {
-        Some(read) => message(read),
-        None => Ok(vec![ContentBlock::text("null")]),
+    let Some(read) = queue::next(pool, &caller.template, caller.index).await? else {
+        return Ok(vec![ContentBlock::text("null")]);
+    };
+    let content: Vec<ContentBlock> = serde_json::from_str(&read.content).map_err(unreadable)?;
+    let questions: Vec<Question> = serde_json::from_str(&read.questions).map_err(unreadable)?;
+    message(read.id, &content, &questions)
+}
+
+/// A stored decision that does not read, or a string that could not be
+/// written, as the call's failure.
+fn unreadable(error: serde_json::Error) -> Failure {
+    Failure::Store(error.to_string())
+}
+
+/// A message being written: the parts made so far, and the JSON filler
+/// written since the last of them, which is the next text part.
+///
+/// The message is one pretty JSON object, written across parts. The
+/// rules:
+///
+/// 1. **Filler is text parts.** Keys, quotes, commas, brackets and
+///    indentation are written with [`filler`](Message::filler) and
+///    [`string`](Message::string), and gather into one text part until
+///    a block is sent.
+/// 2. **A list of content blocks is one quoted string.** Its opening
+///    quote ends the filler before it, and its closing quote begins
+///    the filler after it: see [`blocks`](Message::blocks).
+/// 3. **The blocks stand inside the quotes, each a part of its own**,
+///    in order, exactly as the decision carried them, but for one
+///    thing: a text block's text is escaped as a JSON string's is, so
+///    that the parts read in order are valid JSON.
+#[derive(Default)]
+struct Message {
+    parts: Vec<ContentBlock>,
+    filler: String,
+}
+
+impl Message {
+    /// Write JSON filler.
+    fn filler(&mut self, text: &str) {
+        self.filler.push_str(text);
+    }
+
+    /// Write `text` as a JSON string, quoted and escaped, as filler:
+    /// a scalar, and no list of blocks.
+    fn string(&mut self, text: &str) -> Result<(), Failure> {
+        self.filler.push_str(&serde_json::to_string(text).map_err(unreadable)?);
+        Ok(())
+    }
+
+    /// Write one list of content blocks as one quoted string: rules 2
+    /// and 3.
+    fn blocks(&mut self, blocks: &[ContentBlock]) -> Result<(), Failure> {
+        self.filler.push('"');
+        self.parts.push(ContentBlock::text(std::mem::take(&mut self.filler)));
+        for block in blocks {
+            let mut block = block.clone();
+            if let ContentBlock::Text(text) = &mut block {
+                text.text = escaped(&text.text)?;
+            }
+            self.parts.push(block);
+        }
+        self.filler.push('"');
+        Ok(())
+    }
+
+    /// The message's parts: those made, and the filler after the last
+    /// of them.
+    fn end(mut self) -> Vec<ContentBlock> {
+        self.parts.push(ContentBlock::text(self.filler));
+        self.parts
     }
 }
 
-/// A decision as the voter reads it: one message, in the modalities
-/// the decision came in. The rules:
+/// `text` as it stands inside a JSON string: escaped, and without the
+/// quotes around it. The escaping is `serde_json`'s own, which writes
+/// a string quoted; the two quotes are its first and last characters.
+fn escaped(text: &str) -> Result<String, Failure> {
+    let quoted = serde_json::to_string(text).map_err(unreadable)?;
+    Ok(quoted[1..quoted.len() - 1].to_owned())
+}
+
+/// What begins an element of a list written one element per line at
+/// `indent`: the line break and the indent, after a comma for every
+/// element but the first.
+fn element(first: bool, indent: &str) -> String {
+    format!("{}\n{indent}", if first { "" } else { "," })
+}
+
+/// What ends a list whose own line is at `indent`: the bracket, on a
+/// line of its own unless the list is empty.
+fn closed(empty: bool, indent: &str) -> String {
+    if empty { "]".to_owned() } else { format!("\n{indent}]") }
+}
+
+/// A decision as the voter reads it: one pretty JSON object, two
+/// spaces to a level and one member to a line, written as [`Message`]
+/// writes one. The object:
 ///
-/// 1. **The message is the decision as pretty JSON**: an object with
-///    `id`, the entry's id as eight hex digits; `content`; and
-///    `questions`; the last two exactly as the call that put the
-///    decision carried them.
-/// 2. **A text block stays in the JSON**, as it is.
-/// 3. **Every other block is a part of its own.** An image, audio, a
-///    file or a link is taken out of the JSON and sent as a part of
-///    its kind, where it stood: the JSON before it is one text part,
-///    and the JSON after it goes on in the next. So the parts, read in
-///    order, are the JSON with each such block shown in its place.
-/// 4. **A block is taken out wherever a decision holds blocks**: in
-///    `content`, in a question's `instructions`, in a choice option's
-///    `description`, and in a score's `levels`.
+/// 1. `id`: the entry's id, as eight hex digits.
+/// 2. `content`: the decision's content.
+/// 3. `questions`: each question, with its `type`, its `id` and its
+///    `instructions`; a choice's `options`, each with its `value` and,
+///    where it has one, its `description`; and a score's `levels`.
 ///
-/// A block is taken out by putting a marker string in its place before
-/// the JSON is written, and cutting the written text at each marker,
-/// quotes included. The marker is one the decision's own text does not
-/// hold: see [`marker`].
-fn message(read: Read) -> Result<Vec<ContentBlock>, Failure> {
-    let unreadable = |error: serde_json::Error| Failure::Store(error.to_string());
-    let mut content: Value = serde_json::from_str(&read.content).map_err(unreadable)?;
-    let mut questions: Value = serde_json::from_str(&read.questions).map_err(unreadable)?;
-    let marker = marker(&read);
-    let mut taken = Vec::new();
-    // Rule 4.
-    lift(&mut content, &marker, &mut taken);
-    for question in questions.as_array_mut().into_iter().flatten() {
-        if let Some(instructions) = question.get_mut("instructions") {
-            lift(instructions, &marker, &mut taken);
-        }
-        for option in question.get_mut("options").and_then(Value::as_array_mut).into_iter().flatten() {
-            if let Some(description) = option.get_mut("description") {
-                lift(description, &marker, &mut taken);
+/// `content`, `instructions`, a `description` and each level are lists
+/// of content blocks, and each is written as one quoted string holding
+/// its blocks.
+fn message(id: u32, content: &[ContentBlock], questions: &[Question]) -> Result<Vec<ContentBlock>, Failure> {
+    let mut message = Message::default();
+    message.filler("{\n  \"id\": ");
+    message.string(&format!("{id:08x}"))?;
+    message.filler(",\n  \"content\": ");
+    message.blocks(content)?;
+    message.filler(",\n  \"questions\": [");
+    for (position, question) in questions.iter().enumerate() {
+        message.filler(&element(position == 0, "    "));
+        message.filler("{\n      \"type\": ");
+        message.string(match question {
+            Question::Noul { .. } => "noul",
+            Question::Choice { .. } => "choice",
+            Question::Score { .. } => "score",
+        })?;
+        message.filler(",\n      \"id\": ");
+        message.string(question.id())?;
+        message.filler(",\n      \"instructions\": ");
+        message.blocks(question.instructions())?;
+        match question {
+            Question::Noul { .. } => {}
+            Question::Choice { options, .. } => {
+                message.filler(",\n      \"options\": [");
+                for (position, option) in options.iter().enumerate() {
+                    message.filler(&element(position == 0, "        "));
+                    message.filler("{\n          \"value\": ");
+                    message.string(&option.value)?;
+                    if let Some(description) = &option.description {
+                        message.filler(",\n          \"description\": ");
+                        message.blocks(description)?;
+                    }
+                    message.filler("\n        }");
+                }
+                message.filler(&closed(options.is_empty(), "      "));
+            }
+            Question::Score { levels, .. } => {
+                message.filler(",\n      \"levels\": [");
+                for (position, level) in levels.iter().enumerate() {
+                    message.filler(&element(position == 0, "        "));
+                    message.blocks(level)?;
+                }
+                message.filler(&closed(levels.is_empty(), "      "));
             }
         }
-        for level in question.get_mut("levels").and_then(Value::as_array_mut).into_iter().flatten() {
-            lift(level, &marker, &mut taken);
-        }
+        message.filler("\n    }");
     }
-    // Rule 1.
-    let text = serde_json::to_string_pretty(&json!({ "id": format!("{:08x}", read.id), "content": content, "questions": questions })).map_err(unreadable)?;
-    // Rule 3: where each marker stands in the text, in the text's order.
-    let mut cuts = Vec::new();
-    for position in 0..taken.len() {
-        let quoted = format!("\"{marker}{position}\"");
-        if let Some(start) = text.find(&quoted) {
-            cuts.push((start, quoted.len(), position));
-        }
-    }
-    cuts.sort_unstable();
-    let mut taken: Vec<Option<ContentBlock>> = taken.into_iter().map(Some).collect();
-    let mut parts = Vec::new();
-    let mut from = 0;
-    for (start, length, position) in cuts {
-        parts.push(ContentBlock::text(&text[from..start]));
-        parts.extend(taken[position].take());
-        from = start + length;
-    }
-    parts.push(ContentBlock::text(&text[from..]));
-    Ok(parts)
-}
-
-/// Take every block of `blocks` that is not text out, leaving in its
-/// place the string `marker` followed by its number among the blocks
-/// taken. `blocks` is a JSON array of content blocks; anything else,
-/// and any element that does not read as a content block, is left as
-/// it is.
-fn lift(blocks: &mut Value, marker: &str, taken: &mut Vec<ContentBlock>) {
-    for block in blocks.as_array_mut().into_iter().flatten() {
-        if block.get("type").and_then(Value::as_str) == Some("text") {
-            continue;
-        }
-        if let Ok(read) = serde_json::from_value::<ContentBlock>(block.clone()) {
-            *block = Value::String(format!("{marker}{}", taken.len()));
-            taken.push(read);
-        }
-    }
-}
-
-/// A marker the decision's text does not hold: `@@part-N-`, with the
-/// least `N` for which neither the content nor the questions, as the
-/// JSON text they are stored as, holds it. The stored text is as
-/// `serde_json` writes it, which is how the message is written, so a
-/// marker absent from the one is absent from the other.
-fn marker(read: &Read) -> String {
-    let mut nonce = 0u64;
-    loop {
-        let marker = format!("@@part-{nonce}-");
-        if !read.content.contains(&marker) && !read.questions.contains(&marker) {
-            return marker;
-        }
-        nonce += 1;
-    }
+    message.filler(&closed(questions.is_empty(), "  "));
+    message.filler("\n}");
+    Ok(message.end())
 }
