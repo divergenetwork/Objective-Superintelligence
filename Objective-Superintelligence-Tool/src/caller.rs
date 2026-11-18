@@ -1,5 +1,6 @@
 //! Who is calling, and so which tools are served.
 
+use diverge_sdk::daemon::key;
 use diverge_sdk::shared::mcp::attestation::{self, Caller};
 use rmcp::model::{MetaObject, RequestMetaObject};
 use rmcp::service::RequestContext;
@@ -13,13 +14,15 @@ pub const SUPERINTELLIGENCE_AGENT: &str = "sha256:000000000000000000000000000000
 
 /// What the tool serves a caller: one of two sets of tools, and never
 /// both.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Mode {
     /// An Objective-Superintelligence agent: `structured_decisions`
     /// alone.
     Superintelligence,
-    /// Every other caller: `sum` alone.
-    Other,
+    /// Every other caller: `get` and `vote`. With it, the agent
+    /// calling, whose queue the two work on; or none, for a caller
+    /// that is not an agent the daemon attested, which has no queue.
+    Other(Option<key::Agent>),
 }
 
 /// The mode a request is served in, from the caller the daemon attested
@@ -32,15 +35,19 @@ pub enum Mode {
 ///    An agent whose image digest is [`SUPERINTELLIGENCE_AGENT`] is
 ///    [`Mode::Superintelligence`], whatever its template, index or
 ///    name.
-/// 3. **Everyone else is [`Mode::Other`]**: any other agent, a client
-///    over a connect, and a request with no attestation or one that
-///    does not read as a caller.
+/// 3. **Every other agent is [`Mode::Other`], with its key**: its
+///    template and index, which name its queue.
+/// 4. **Everyone else is [`Mode::Other`], with no key**: a client over
+///    a connect, and a request with no attestation or one that does
+///    not read as a caller.
 pub fn mode(context: &RequestContext<RoleServer>, own: Option<&RequestMetaObject>) -> Mode {
     match attestation::request(meta(context, own)) {
         // Rule 2.
         Ok(Caller::Agent(agent)) if agent.image.digest == SUPERINTELLIGENCE_AGENT => Mode::Superintelligence,
         // Rule 3.
-        _ => Mode::Other,
+        Ok(Caller::Agent(agent)) => Mode::Other(Some(agent.key)),
+        // Rule 4.
+        _ => Mode::Other(None),
     }
 }
 

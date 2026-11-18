@@ -12,7 +12,7 @@ use diverge_sdk::wire::client::handle::Handle;
 use futures_util::StreamExt as _;
 use rmcp::model::ContentBlock;
 
-use crate::agent::Agent;
+use crate::agent::Decider;
 use crate::daemon::Daemon;
 use crate::outcome::Outcome;
 
@@ -41,7 +41,7 @@ use crate::outcome::Outcome;
 ///
 /// Nothing is timed: the stream ends by itself when the agent's run
 /// does.
-pub async fn ask(daemon: &Daemon, handle: &Handle, agent: &Agent, content: &[ContentBlock], questions: &[Question]) -> Outcome {
+pub async fn ask(daemon: &Daemon, handle: &Handle, agent: &Decider, content: &[ContentBlock], questions: &[Question]) -> Outcome {
     let request = Frame {
         agent: agent.reference(),
         message: Message::StructuredDecisions {

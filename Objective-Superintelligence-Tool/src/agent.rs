@@ -5,14 +5,28 @@ use diverge_sdk::daemon::reference;
 use diverge_sdk::shared::relay::Relay;
 use serde::{Deserialize, Deserializer, Serialize};
 
-/// One agent asked: the template it was made from and its index among
-/// the agents made from that template, which together name it once
-/// and for all on the daemon that holds it; and that daemon, where it
-/// is another. A call of `structured_decisions` lists the agents it
-/// asks, each one of these.
+/// One agent asked, of one of two kinds. Internally tagged by `type`,
+/// snake case: `"structured_decision"` or `"voter"`. Each kind takes
+/// its own members and no other, so a voter with a `relay` is refused.
+/// A call of `structured_decisions` lists the agents it asks, each one
+/// of these.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum Agent {
+    /// An agent that takes structured decisions: see [`Decider`].
+    StructuredDecision(Decider),
+    /// An agent that votes through this tool: see [`Voter`].
+    Voter(Voter),
+}
+
+/// An agent that takes structured decisions: the template it was made
+/// from and its index among the agents made from that template, which
+/// together name it once and for all on the daemon that holds it; and
+/// that daemon, where it is another. The decision is sent to it as a
+/// message, and its answer is read from its log.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
-pub struct Agent {
+pub struct Decider {
     /// The agent's template, by id.
     pub template: String,
     /// The agent's index among the agents made from that template.
@@ -27,6 +41,20 @@ pub struct Agent {
     #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "route")]
     #[schemars(with = "Vec<DaemonId>", length(min = 1))]
     pub relay: Option<Vec<DaemonId>>,
+}
+
+/// An agent that votes: the template it was made from and its index
+/// among the agents made from that template. It is on this daemon,
+/// always: it votes through this tool, which is this daemon's, so it
+/// has no `relay`. It must declare this tool itself to be served
+/// `get` and `vote`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Voter {
+    /// The agent's template, by id.
+    pub template: String,
+    /// The agent's index among the agents made from that template.
+    pub index: u64,
 }
 
 /// A `relay` as the arguments carry one: the route's daemon IDs, one
@@ -46,7 +74,7 @@ fn route<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Vec<Daemon
     Ok(Some(route))
 }
 
-impl Agent {
+impl Decider {
     /// The agent, as a request to the daemon names it.
     pub fn reference(&self) -> reference::Agent {
         reference::Agent::TemplateIndex {
@@ -59,5 +87,15 @@ impl Agent {
     /// for an agent on this daemon.
     pub fn relay(&self) -> Option<Relay> {
         self.relay.clone().map(Relay)
+    }
+}
+
+impl Voter {
+    /// The agent, as a request to the daemon names it.
+    pub fn reference(&self) -> reference::Agent {
+        reference::Agent::TemplateIndex {
+            template: self.template.clone(),
+            index: self.index,
+        }
     }
 }

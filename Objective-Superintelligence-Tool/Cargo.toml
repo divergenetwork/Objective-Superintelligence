@@ -14,8 +14,9 @@ path = "src/main.rs"
 
 [dependencies]
 # The SDK, at one commit of Diverge: the container's contract with the
-# proxy beside it (registration, secrets, the daemon), the grant the
-# tool declares, and the daemon's `agents message` with its watch.
+# proxy beside it (registration, secrets, the daemon, Postgres), the
+# caller the daemon attests on every MCP request, the grants the tool
+# declares, and the daemon's `agents message` with its watch.
 diverge-sdk = { git = "https://github.com/divergenetwork/Diverge.git", rev = "7cd5a6632c78d9aef8704eb026afa5417165021f" }
 # The program's door: an HTTP server on the loopback the proxy dials,
 # `/register`, the secrets' two paths, and the MCP server at `/mcp`.
@@ -32,6 +33,11 @@ serde_json = { version = "1.0.154", features = ["preserve_order"] }
 futures-util = { version = "0.3.34", default-features = false, features = ["std"] }
 # An agent's answers, by question, in the order it gave them.
 indexmap = { version = "2.14.2", features = ["serde"] }
-# The runtime under the listener and the lazily made daemon
-# connection.
+# A vote's probabilities: 1 for what was picked, 0 for the rest.
+rust_decimal = { version = "1.43.0", features = ["serde-float"] }
+# The voters' queues: the tool's database, through the proxy's
+# loopback pgwire.
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres"] }
+# The runtime under the listener, the lazily made daemon connection
+# and pool, the task each call runs on, and the wait for a vote.
 tokio = { version = "1.54.1", default-features = false, features = ["macros", "net", "rt-multi-thread", "sync"] }

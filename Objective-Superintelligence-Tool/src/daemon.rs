@@ -18,6 +18,12 @@ pub struct Daemon {
 }
 
 impl Daemon {
+    /// The proxy, from the inside: what the database is reached
+    /// through as well.
+    pub fn client(&self) -> &Client {
+        &self.client
+    }
+
     /// The connection: the one held, or a new one.
     pub async fn handle(&self) -> Result<Handle, Failure> {
         let mut held = self.handle.lock().await;

@@ -11,7 +11,11 @@
 //!   sends the decision to every one of them through the daemon,
 //!   watching each, and returns what each answered, or that it failed.
 //!   It weighs nothing and averages nothing: that is the agent's work.
-//! - **Every other caller** is served `sum`, which adds two numbers.
+//!   An agent listed as a voter is not sent the decision: it is put in
+//!   the voter's queue, the voter is told so, and its vote is waited
+//!   for.
+//! - **Every other caller** is served `get` and `vote`: the next
+//!   decision in its queue, and its vote on one.
 //!
 //! The program is an HTTP server on the container's loopback, at the
 //! port [`diverge_sdk::container_proxy::inside::port()`] names, and
@@ -25,8 +29,8 @@
 //! # Nothing of the proxy's is counted on at the start
 //!
 //! The host injects the proxy at runtime, and it may not be up when
-//! the program starts. So the daemon is reached when a call first
-//! needs it, and kept.
+//! the program starts. So the daemon and the database are each
+//! reached when a call first needs them, and kept.
 
 mod agent;
 mod arguments;
@@ -34,13 +38,16 @@ mod ask;
 mod caller;
 mod daemon;
 mod failure;
+mod get;
 mod outcome;
 mod permissions;
 mod register;
 mod secrets;
 mod server;
+mod store;
 mod structured_decisions;
-mod sum;
+mod vote;
+mod voters;
 
 use std::io::Write as _;
 use std::sync::Arc;
@@ -92,7 +99,7 @@ fn schema() {
 /// The server, for the container's life, bound on the loopback: the
 /// proxy is the only thing that dials it, and it is beside it. Every
 /// MCP session the proxy opens shares one [`Server`], so the daemon
-/// connection is made once.
+/// connection and the database pool are each made once.
 async fn serve() {
     let server = Server::default();
     let mcp = StreamableHttpService::new(move || Ok(server.clone()), Arc::new(LocalSessionManager::default()), StreamableHttpServerConfig::default());
