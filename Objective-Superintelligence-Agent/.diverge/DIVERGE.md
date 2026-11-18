@@ -146,8 +146,9 @@ So is an agent whose route could not be taken.
 ## Dependency
 
 One, always: the Objective-Superintelligence-Tool, made with no
-arguments, `{}`, transient, 256 MiB of memory and of disk, with no
-mount and no secret. Its image is fixed in this image. The agent names
+arguments, `{}`, lazy and global (one tool for every agent that
+declares it, run while it is used), 256 MiB of memory and of disk,
+with no mount and no secret. Its image is fixed in this image. The agent names
 its agents (weights left out) on every call of the tool's
 `structured_decisions`, which the tool serves to this agent's image
 alone. The tool declares `message` over any agent and `relay` over any

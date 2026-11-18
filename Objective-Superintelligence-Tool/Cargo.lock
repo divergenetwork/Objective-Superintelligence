@@ -505,7 +505,7 @@ dependencies = [
 [[package]]
 name = "diverge-sdk"
 version = "1.0.0"
-source = "git+https://github.com/divergenetwork/Diverge.git?rev=f6bd116a815bb0c32b82966d4552961ea9235ca3#f6bd116a815bb0c32b82966d4552961ea9235ca3"
+source = "git+https://github.com/divergenetwork/Diverge.git?rev=7cd5a6632c78d9aef8704eb026afa5417165021f#7cd5a6632c78d9aef8704eb026afa5417165021f"
 dependencies = [
  "aes-gcm",
  "axum",

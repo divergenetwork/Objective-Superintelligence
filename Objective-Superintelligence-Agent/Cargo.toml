@@ -16,7 +16,7 @@ path = "src/main.rs"
 # The SDK, at one commit of Diverge: the container's contract with the
 # proxy beside it (registration, secrets, the run, the MCP session),
 # the dependency it declares, and the chunks a run is made of.
-diverge-sdk = { git = "https://github.com/divergenetwork/Diverge.git", rev = "f6bd116a815bb0c32b82966d4552961ea9235ca3" }
+diverge-sdk = { git = "https://github.com/divergenetwork/Diverge.git", rev = "7cd5a6632c78d9aef8704eb026afa5417165021f" }
 # The run as a generator of events.
 async-stream = { version = "0.3.6" }
 # The program's door: an HTTP server on the loopback the proxy dials,

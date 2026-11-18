@@ -1,6 +1,6 @@
 //! The one tool the agent depends on, as it declares it.
 
-use diverge_sdk::shared::containers::dependencies::{Mode, Template};
+use diverge_sdk::shared::containers::dependencies::{Mode, Scope, Template};
 use diverge_sdk::shared::containers::request::Image;
 use serde_json::json;
 
@@ -21,8 +21,13 @@ const DISK: u64 = 268_435_456;
 /// The agent's one dependency, the same at every registration: the
 /// Objective-Superintelligence tool, made with no arguments, `{}`. The
 /// agents it asks come with each call, from this agent's own
-/// arguments, by [`Arguments::called`](crate::arguments::Arguments::called). Transient, with no mount and no secret: it
-/// keeps nothing, and runs while this agent's decision does.
+/// arguments, by [`Arguments::called`](crate::arguments::Arguments::called).
+///
+/// Lazy and global, with no mount and no secret: one tool for every
+/// agent that declares it, whatever its template, run while it is
+/// used and stopped when it is not. It keeps nothing, so nothing is
+/// lost when it stops, and it may mount nothing, since a mount is
+/// only for a tool of one agent.
 pub fn dependency() -> Result<Template, String> {
     let image: Image = serde_json::from_str(TOOL_IMAGE).map_err(|error| format!("the tool image compiled into this agent is not an image: {error}"))?;
     Ok(Template {
@@ -31,7 +36,8 @@ pub fn dependency() -> Result<Template, String> {
         disk: DISK,
         arguments: json!({}),
         secrets: Vec::new(),
-        mode: Mode::Transient {
+        mode: Mode::Lazy {
+            scope: Scope::Global,
             fuse_file_mounts: Vec::new(),
             fuse_directory_mounts: Vec::new(),
         },
