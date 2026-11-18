@@ -198,7 +198,7 @@ decision is passed on as it came. A structured decision agent that
 does not take a modality the decision uses refuses it, and is left out
 as a failure. So is one whose route could not be taken. A voter reads
 the decision as JSON, with each image, audio or file as a part of its
-own, in its place.
+own, inside the quoted string it belongs to.
 
 ## Dependency
 

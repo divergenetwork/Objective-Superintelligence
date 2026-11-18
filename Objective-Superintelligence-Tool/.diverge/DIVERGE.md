@@ -132,25 +132,69 @@ several decisions waiting reads them one by one, oldest first.
 ## `get`
 
 No parameters. It takes the next decision out of the caller's queue,
-and returns it as one message:
+and returns it as one pretty JSON object, written across the parts of
+the result:
 
 ```json
 {
   "id": "0a1b2c3d",
-  "content": [{"type": "text", "text": "…"}],
-  "questions": [{"type": "noul", "id": "q1", "instructions": [{"type": "text", "text": "…"}]}]
+  "content": "…",
+  "questions": [
+    {
+      "type": "noul",
+      "id": "q1",
+      "instructions": "…"
+    },
+    {
+      "type": "choice",
+      "id": "q2",
+      "instructions": "…",
+      "options": [
+        {
+          "value": "red",
+          "description": "…"
+        }
+      ]
+    },
+    {
+      "type": "score",
+      "id": "q3",
+      "instructions": "…",
+      "levels": [
+        "…",
+        "…"
+      ]
+    }
+  ]
 }
 ```
 
 - `id` is the decision's id in this voter's queue: eight hex digits.
   `vote` takes it.
-- `content` and `questions` are as the call that put the decision
-  carried them.
-- A text block stays in the JSON. Every other block (an image, audio,
-  a file) is returned as a part of its own kind, in its place: the JSON
-  before it is one text part, and the JSON goes on in the next. Read
-  in order, the parts are the JSON with each such block shown where it
-  stood.
+- `content`, a question's `instructions`, an option's `description`
+  and each of a score's `levels` are lists of content blocks. Each is
+  written as one quoted string, and its blocks stand inside the quotes
+  as parts of their own, in order, as the decision carried them. A
+  text block's text is escaped as a JSON string's is; an image, audio
+  or a file is the part it was.
+- Everything around the blocks (keys, quotes, commas, brackets,
+  indentation) is text parts, before and after them.
+- An option with no description has no `description`.
+
+So the parts for a question whose instructions are text, an image,
+then text are:
+
+| part | holds |
+|---|---|
+| text | `…"instructions": "` |
+| text | `Is this one better? Say \"yes\" or \"no\".` |
+| image | the image |
+| text | ` Ignore the border.` |
+| text | `"`, and the JSON after it |
+
+Read in order, the parts are valid JSON, with the image inside the
+quotes.
+
 - Each decision is returned once. The next call returns the one after
   it. With nothing in the queue, the result is the text `null`.
 
