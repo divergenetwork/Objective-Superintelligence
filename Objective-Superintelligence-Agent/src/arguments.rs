@@ -4,6 +4,7 @@
 use diverge_sdk::daemon::endpoints::daemons::DaemonId;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::{Value, json};
 
 /// The arguments the agent is made with: the agents every decision is
 /// put to, each with the weight its answer is averaged by.
@@ -62,6 +63,20 @@ fn route<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Vec<Daemon
 }
 
 impl Arguments {
+    /// The agents as the tool's `structured_decisions` takes them, in
+    /// the arguments' order: each by its template and index, with its
+    /// `relay` where it has one, and its weight left out — the tool
+    /// asks, and weighs nothing.
+    pub fn called(&self) -> Vec<Value> {
+        self.agents
+            .iter()
+            .map(|agent| match &agent.relay {
+                Some(relay) => json!({ "template": agent.template, "index": agent.index, "relay": relay }),
+                None => json!({ "template": agent.template, "index": agent.index }),
+            })
+            .collect()
+    }
+
     /// Each agent's weight as the decimal the averaging is done in,
     /// in the arguments' order; or why the arguments cannot be taken.
     ///

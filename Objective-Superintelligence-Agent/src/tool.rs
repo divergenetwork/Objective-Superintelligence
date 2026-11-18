@@ -16,13 +16,14 @@ const NAME: &str = "structured_decisions";
 /// outcomes, one per agent, in the agents' order.
 ///
 /// The call is an ordinary MCP tool call through the proxy beside the
-/// program, as any agent calls any of its tools. `agents` is how many
-/// outcomes there must be; a result of another length is not the
-/// tool's, and is refused whole rather than matched to the wrong
-/// weights.
-pub async fn ask(client: &Client, decision: &Decision, agents: usize) -> Result<Vec<Outcome>, Failure> {
+/// program, as any agent calls any of its tools, and names the agents
+/// to ask, as [`Arguments::called`](crate::arguments::Arguments::called)
+/// writes them. There must be one outcome per agent; a result of
+/// another length is not the tool's, and is refused whole rather than
+/// matched to the wrong weights.
+pub async fn ask(client: &Client, decision: &Decision, agents: &[Value]) -> Result<Vec<Outcome>, Failure> {
     let name = name(client).await?;
-    let arguments = json!({ "content": decision.content, "questions": decision.questions });
+    let arguments = json!({ "agents": agents, "content": decision.content, "questions": decision.questions });
     let Value::Object(arguments) = arguments else {
         return Err(Failure::Result("the call's arguments are not an object".to_owned()));
     };
@@ -43,8 +44,8 @@ pub async fn ask(client: &Client, decision: &Decision, agents: usize) -> Result<
     }
     let structured = result.get("structuredContent").cloned().ok_or_else(|| Failure::Result("it carries no structured content".to_owned()))?;
     let results: Results = serde_json::from_value(structured).map_err(|error| Failure::Result(error.to_string()))?;
-    if results.results.len() != agents {
-        return Err(Failure::Result(format!("it holds {} outcomes for {agents} agents", results.results.len())));
+    if results.results.len() != agents.len() {
+        return Err(Failure::Result(format!("it holds {} outcomes for {} agents", results.results.len(), agents.len())));
     }
     Ok(results.results)
 }

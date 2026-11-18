@@ -2,9 +2,7 @@
 
 use diverge_sdk::shared::containers::dependencies::{Mode, Template};
 use diverge_sdk::shared::containers::request::Image;
-use serde_json::{Value, json};
-
-use crate::arguments::Arguments;
+use serde_json::json;
 
 /// The image of the Objective-Superintelligence tool this agent was built
 /// against: its digest, compiled in from `tool-image.json` beside the
@@ -20,28 +18,18 @@ const MEMORY: u64 = 268_435_456;
 /// The disk the tool's container is given, in bytes: 256 MiB.
 const DISK: u64 = 268_435_456;
 
-/// The agent's one dependency, the same at every registration but for
-/// the agents it carries: the Objective-Superintelligence tool, made with
-/// this agent's own agents, each with its `relay` where it has one
-/// and its weight left out — the tool asks, and weighs nothing. An
-/// agent with no `relay` is written with none, so that the tool's
-/// arguments have the one spelling its own have. Transient, with no mount and no secret: it
+/// The agent's one dependency, the same at every registration: the
+/// Objective-Superintelligence tool, made with no arguments, `{}`. The
+/// agents it asks come with each call, from this agent's own
+/// arguments, by [`Arguments::called`](crate::arguments::Arguments::called). Transient, with no mount and no secret: it
 /// keeps nothing, and runs while this agent's decision does.
-pub fn dependency(arguments: &Arguments) -> Result<Template, String> {
+pub fn dependency() -> Result<Template, String> {
     let image: Image = serde_json::from_str(TOOL_IMAGE).map_err(|error| format!("the tool image compiled into this agent is not an image: {error}"))?;
-    let agents: Vec<Value> = arguments
-        .agents
-        .iter()
-        .map(|agent| match &agent.relay {
-            Some(relay) => json!({ "template": agent.template, "index": agent.index, "relay": relay }),
-            None => json!({ "template": agent.template, "index": agent.index }),
-        })
-        .collect();
     Ok(Template {
         image,
         memory: MEMORY,
         disk: DISK,
-        arguments: json!({ "agents": agents }),
+        arguments: json!({}),
         secrets: Vec::new(),
         mode: Mode::Transient {
             fuse_file_mounts: Vec::new(),

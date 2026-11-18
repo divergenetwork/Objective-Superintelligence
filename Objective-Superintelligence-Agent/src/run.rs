@@ -56,7 +56,7 @@ pub async fn run(State(client): State<Arc<Client>>, Json(request): Json<run::req
         run::request::Request::StructuredDecisions(decision) => decision,
         run::request::Request::Chat { .. } => return Err(no_chat()),
     };
-    let Some(weights) = register::weights() else {
+    let Some(registered) = register::registered() else {
         return Err((StatusCode::CONFLICT, Json(json!({ "kind": "unregistered", "error": "the agent is not registered" }))));
     };
     let events = async_stream::stream! {
@@ -70,7 +70,7 @@ pub async fn run(State(client): State<Arc<Client>>, Json(request): Json<run::req
             yield Ok(event);
         }
         // Rules 3.2 and 4.
-        let last = match decide(&client, &decision, weights).await {
+        let last = match decide(&client, &decision, &registered.agents, &registered.weights).await {
             Ok(decisions) => AgenticLoopChunk::StructuredDecisionsResponse(decisions),
             Err(failure) => AgenticLoopChunk::Notification(NotificationChunk {
                 r#type: Default::default(),
@@ -93,8 +93,8 @@ pub async fn enqueue(Json(_request): Json<enqueue::request::Request>) -> Refusal
 
 /// The decision's answers: the agents asked through the tool, and
 /// their answers averaged.
-async fn decide(client: &Client, decision: &Decision, weights: &[Decimal]) -> Result<StructuredDecisionsResponseChunk, Failure> {
-    let outcomes = tool::ask(client, decision, weights.len()).await?;
+async fn decide(client: &Client, decision: &Decision, agents: &[Value], weights: &[Decimal]) -> Result<StructuredDecisionsResponseChunk, Failure> {
+    let outcomes = tool::ask(client, decision, agents).await?;
     Ok(StructuredDecisionsResponseChunk {
         r#type: Default::default(),
         decisions: average(&decision.questions, &outcomes, weights)?,

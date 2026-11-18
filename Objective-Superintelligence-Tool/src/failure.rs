@@ -11,9 +11,6 @@ use std::fmt;
 pub enum Failure {
     /// The tool's parameters are not what it takes.
     Parameters(String),
-    /// The tool was called before it was registered, so it has no
-    /// agents to ask.
-    Unregistered,
     /// The daemon could not be reached.
     Daemon(String),
 }
@@ -22,7 +19,6 @@ impl fmt::Display for Failure {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Failure::Parameters(why) => write!(f, "the parameters are not what this tool takes: {why}"),
-            Failure::Unregistered => write!(f, "the tool is not registered yet, and has no agents to ask"),
             Failure::Daemon(why) => write!(f, "the daemon could not be reached: {why}"),
         }
     }

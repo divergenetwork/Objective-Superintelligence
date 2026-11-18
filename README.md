@@ -13,7 +13,7 @@ Two container images, built from the two folders here:
 | image | what it is |
 |---|---|
 | [`Objective-Superintelligence-Agent`](Objective-Superintelligence-Agent/.diverge/DIVERGE.md) | The agent. Made with a list of agents and a weight for each. Takes structured decisions only, no chat. |
-| [`Objective-Superintelligence-Agent-Tool`](Objective-Superintelligence-Agent-Tool/.diverge/DIVERGE.md) | The agent's one dependency tool. Puts a decision to every one of those agents and returns each one's answer, or that it failed. |
+| [`Objective-Superintelligence-Tool`](Objective-Superintelligence-Tool/.diverge/DIVERGE.md) | The agent's one dependency tool, with no arguments. To the agent, it puts a decision to the agents the agent names and returns each one's answer, or that it failed. To any other caller, it serves `sum`, which adds two numbers. |
 
 ## How a decision is answered
 
@@ -40,7 +40,8 @@ of the template it was made from and its index, with its weight:
 ```
 
 A weight is any number greater than zero. The tool is declared by the
-agent itself, with the same agents; you do not create or attach it.
+agent itself, with no arguments; the agent names its agents on each
+call. You do not create or attach it.
 
 An agent on another daemon is listed with the route to that daemon,
 `relay`: the ids of the remote daemons to go through, the first one
@@ -63,8 +64,8 @@ context is that folder. Build the tool first, with Diverge itself:
 
 ```bash
 diverge run images build '{"provider": <provider identity>,
-  "containerfile": "<the text of Objective-Superintelligence-Agent-Tool/Containerfile>",
-  "context": {"volume": "<a volume holding this repository>", "path": ["Objective-Superintelligence-Agent-Tool"]}}'
+  "containerfile": "<the text of Objective-Superintelligence-Tool/Containerfile>",
+  "context": {"volume": "<a volume holding this repository>", "path": ["Objective-Superintelligence-Tool"]}}'
 # … {"built":{"digest":"sha256:…","bytes":…}}
 ```
 
@@ -73,7 +74,7 @@ agent, and build the agent the same way with `"path": ["Objective-Superintellige
 agent's digest is what an agent template names.
 
 As committed, `Objective-Superintelligence-Agent/tool-image.json` names the tool image built from
-this revision's `Objective-Superintelligence-Agent-Tool/`:
+an earlier revision's tool, from before it took no arguments:
 `sha256:4f7386f7cb6cd8cc7bab7f6e2a05b630b399de959ef24a00e48adf3948f9b1ba`.
 A digest is only usable on a provider whose Store holds that image, so
 on another host, build both.

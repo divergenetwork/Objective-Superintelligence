@@ -12,7 +12,7 @@ use diverge_sdk::wire::client::handle::Handle;
 use futures_util::StreamExt as _;
 use rmcp::model::ContentBlock;
 
-use crate::arguments::Agent;
+use crate::agent::Agent;
 use crate::daemon::Daemon;
 use crate::outcome::Outcome;
 

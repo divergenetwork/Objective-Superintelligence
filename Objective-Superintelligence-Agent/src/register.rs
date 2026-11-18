@@ -11,14 +11,21 @@ use tokio::sync::OnceCell;
 use crate::arguments::Arguments;
 use crate::dependency::dependency;
 
-/// The weights of the one registration, in the arguments' order, once
-/// it has happened: all a run needs of the arguments, since the tool
-/// holds the agents themselves.
-static REGISTERED: OnceCell<Vec<Decimal>> = OnceCell::const_new();
+/// What a run needs of the one registration, once it has happened.
+pub struct Registered {
+    /// The agents, as the tool's call takes them, in the arguments'
+    /// order.
+    pub agents: Vec<Value>,
+    /// Each agent's weight, in the same order.
+    pub weights: Vec<Decimal>,
+}
 
-/// The weights the agent was registered with; none before it was.
-pub fn weights() -> Option<&'static [Decimal]> {
-    REGISTERED.get().map(Vec::as_slice)
+/// The one registration, once it has happened.
+static REGISTERED: OnceCell<Registered> = OnceCell::const_new();
+
+/// What the agent was registered with; none before it was.
+pub fn registered() -> Option<&'static Registered> {
+    REGISTERED.get()
 }
 
 /// `POST /register`: arguments that are not [`Arguments`], that list
@@ -30,8 +37,8 @@ pub async fn register(Json(request): Json<register::request::Request>) -> Result
     let refused = |error: String| (StatusCode::BAD_REQUEST, Json(json!({ "kind": "arguments", "error": error })));
     let arguments = serde_json::from_value::<Arguments>(request.arguments).map_err(|error| refused(error.to_string()))?;
     let weights = arguments.weights().map_err(refused)?;
-    let dependency = dependency(&arguments).map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "kind": "image", "error": error }))))?;
-    match REGISTERED.set(weights) {
+    let dependency = dependency().map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "kind": "image", "error": error }))))?;
+    match REGISTERED.set(Registered { agents: arguments.called(), weights }) {
         Ok(()) => Ok((
             StatusCode::OK,
             Json(Response {

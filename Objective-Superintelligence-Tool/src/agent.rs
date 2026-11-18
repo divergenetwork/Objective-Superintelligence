@@ -1,35 +1,15 @@
-//! What the tool takes as its arguments: the agents it asks.
+//! One agent a decision is put to, as a call names it.
 
 use diverge_sdk::daemon::endpoints::daemons::DaemonId;
 use diverge_sdk::daemon::reference;
-use diverge_sdk::shared::permission::agents::Key;
 use diverge_sdk::shared::relay::Relay;
 use serde::{Deserialize, Deserializer, Serialize};
-
-/// The arguments the tool is made with: the agents every decision is
-/// put to.
-///
-/// # How it runs
-///
-/// As a dependency tool of the Objective-Superintelligence agent, which
-/// declares it with its own agents, weights left out. The tool asks
-/// the daemon for `message` over exactly the agents listed here that
-/// are on it, and for `relay` over exactly the remote daemons the
-/// routes of the others begin at: see
-/// [`permissions`](crate::permissions::permissions).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct Arguments {
-    /// The agents asked, in the order their answers are returned in.
-    /// At least one.
-    #[schemars(length(min = 1))]
-    pub agents: Vec<Agent>,
-}
 
 /// One agent asked: the template it was made from and its index among
 /// the agents made from that template, which together name it once
 /// and for all on the daemon that holds it; and that daemon, where it
-/// is another.
+/// is another. A call of `structured_decisions` lists the agents it
+/// asks, each one of these.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Agent {
@@ -54,9 +34,8 @@ pub struct Agent {
 ///
 /// 1. **One spelling of every meaning.** An agent on this daemon has
 ///    no `relay`. An empty `relay` would say the same, and so would
-///    a `null`; both are refused, since the arguments are hashed into
-///    the template's id as they are written, and two spellings of
-///    one list of agents would be two templates.
+///    a `null`; both are refused, as the agent's own arguments,
+///    which these come from, refuse them.
 /// 2. **Each ID is a daemon ID**, in its one spelling: see
 ///    [`DaemonId`].
 fn route<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Vec<DaemonId>>, D::Error> {
@@ -80,14 +59,5 @@ impl Agent {
     /// for an agent on this daemon.
     pub fn relay(&self) -> Option<Relay> {
         self.relay.clone().map(Relay)
-    }
-
-    /// The agent, as a grant lists it: meaningful for an agent on this
-    /// daemon only, since the pair is the holding daemon's.
-    pub fn key(&self) -> Key {
-        Key {
-            template: self.template.clone(),
-            index: self.index,
-        }
     }
 }

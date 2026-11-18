@@ -1,13 +1,17 @@
-//! `tool`, as a tool container: one
-//! structured decision, put to a list of agents.
+//! `tool`, as a tool container: what it serves depends on who calls.
 //!
-//! The tool is made with a list of agents, each by its template and
-//! index. Its one MCP tool, `structured_decisions`, takes a decision
-//! — a prompt and typed questions — sends it to every one of those
-//! agents through the daemon, watching each, and returns what each
-//! answered, or that it failed. It weighs nothing and averages
-//! nothing: that is the work of the agent that depends on it,
-//! the Objective-Superintelligence agent.
+//! The tool takes no arguments. Every request it receives carries the
+//! caller the daemon attested, and the tool serves one of two modes by
+//! it — see [`caller`]:
+//!
+//! - **An Objective-Superintelligence agent** is served
+//!   `structured_decisions`, which takes the agents to ask, each by
+//!   its template and index and, for one on another daemon, the route
+//!   to it, with a decision — a prompt and typed questions — and
+//!   sends the decision to every one of them through the daemon,
+//!   watching each, and returns what each answered, or that it failed.
+//!   It weighs nothing and averages nothing: that is the agent's work.
+//! - **Every other caller** is served `sum`, which adds two numbers.
 //!
 //! The program is an HTTP server on the container's loopback, at the
 //! port [`diverge_sdk::container_proxy::inside::port()`] names, and
@@ -24,8 +28,10 @@
 //! the program starts. So the daemon is reached when a call first
 //! needs it, and kept.
 
+mod agent;
 mod arguments;
 mod ask;
+mod caller;
 mod daemon;
 mod failure;
 mod outcome;
@@ -34,6 +40,7 @@ mod register;
 mod secrets;
 mod server;
 mod structured_decisions;
+mod sum;
 
 use std::io::Write as _;
 use std::sync::Arc;

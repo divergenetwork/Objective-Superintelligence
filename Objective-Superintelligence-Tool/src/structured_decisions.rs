@@ -6,24 +6,29 @@ use rmcp::model::ContentBlock;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::agent::Agent;
 use crate::ask::ask;
 use crate::daemon::Daemon;
 use crate::failure::Failure;
 use crate::outcome::Outcome;
-use crate::register;
 
 /// The tool's name.
 pub const NAME: &str = "structured_decisions";
 
 /// The tool's description, as `tools/list` states it.
-pub const DESCRIPTION: &str = "Put one structured decision (a prompt and typed questions) to every agent this tool was made with, and \
-return what each answered. `results` has one entry per agent, in the order the tool was made with them: an object with one member \
+pub const DESCRIPTION: &str = "Put one structured decision (a prompt and typed questions) to every agent listed in `agents`, and \
+return what each answered. `results` has one entry per agent, in the order `agents` lists them: an object with one member \
 `answer`, the agent's answers by question id, or the string `failure` for an agent that gave none.";
 
-/// The tool's parameters: a decision, as `agents message` takes one.
+/// The tool's parameters: the agents asked, and a decision, as
+/// `agents message` takes one.
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Parameters {
+    /// The agents asked, in the order their answers are returned in.
+    /// At least one.
+    #[schemars(length(min = 1))]
+    pub agents: Vec<Agent>,
     /// What is being decided on: the prompt every question is about.
     pub content: Vec<ContentBlock>,
     /// The questions, each with its own id.
@@ -33,7 +38,7 @@ pub struct Parameters {
 /// The tool's answer.
 #[derive(Debug, Clone, Serialize)]
 pub struct Results {
-    /// One outcome per agent, in the order of the tool's arguments.
+    /// One outcome per agent, in the order of the call's `agents`.
     pub results: Vec<Outcome>,
 }
 
@@ -41,8 +46,10 @@ pub struct Results {
 /// of it. The agents do not wait on one another, and one's failure is
 /// its own outcome and not the call's.
 pub async fn call(daemon: &Daemon, parameters: Parameters) -> Result<Results, Failure> {
-    let arguments = register::arguments().ok_or(Failure::Unregistered)?;
+    if parameters.agents.is_empty() {
+        return Err(Failure::Parameters("`agents` lists no agent, and there must be at least one".to_owned()));
+    }
     let handle = daemon.handle().await?;
-    let results = join_all(arguments.agents.iter().map(|agent| ask(daemon, &handle, agent, &parameters.content, &parameters.questions))).await;
+    let results = join_all(parameters.agents.iter().map(|agent| ask(daemon, &handle, agent, &parameters.content, &parameters.questions))).await;
     Ok(Results { results })
 }
