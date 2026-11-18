@@ -1,7 +1,7 @@
 ---
 {
   "type": "tool",
-  "name": "Objective-Superintelligence",
+  "name": "Objective-Superintelligence-Agent-Tool",
   "schema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Arguments",

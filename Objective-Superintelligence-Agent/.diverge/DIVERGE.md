@@ -1,7 +1,7 @@
 ---
 {
   "type": "agent",
-  "name": "Objective-Superintelligence",
+  "name": "Objective-Superintelligence-Agent",
   "chat": false,
   "structured_decisions": {
     "prompt_modalities": {

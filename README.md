@@ -12,8 +12,8 @@ Two container images, built from the two folders here:
 
 | image | what it is |
 |---|---|
-| [`agent`](agent/.diverge/DIVERGE.md) | The agent. Made with a list of agents and a weight for each. Takes structured decisions only, no chat. |
-| [`tool`](tool/.diverge/DIVERGE.md) | The agent's one dependency tool. Puts a decision to every one of those agents and returns each one's answer, or that it failed. |
+| [`Objective-Superintelligence-Agent`](Objective-Superintelligence-Agent/.diverge/DIVERGE.md) | The agent. Made with a list of agents and a weight for each. Takes structured decisions only, no chat. |
+| [`Objective-Superintelligence-Agent-Tool`](Objective-Superintelligence-Agent-Tool/.diverge/DIVERGE.md) | The agent's one dependency tool. Puts a decision to every one of those agents and returns each one's answer, or that it failed. |
 
 ## How a decision is answered
 
@@ -63,17 +63,17 @@ context is that folder. Build the tool first, with Diverge itself:
 
 ```bash
 diverge run images build '{"provider": <provider identity>,
-  "containerfile": "<the text of tool/Containerfile>",
-  "context": {"volume": "<a volume holding this repository>", "path": ["tool"]}}'
+  "containerfile": "<the text of Objective-Superintelligence-Agent-Tool/Containerfile>",
+  "context": {"volume": "<a volume holding this repository>", "path": ["Objective-Superintelligence-Agent-Tool"]}}'
 # … {"built":{"digest":"sha256:…","bytes":…}}
 ```
 
-Put that digest in `agent/tool-image.json`, which is compiled into the
-agent, and build the agent the same way with `"path": ["agent"]`. The
+Put that digest in `Objective-Superintelligence-Agent/tool-image.json`, which is compiled into the
+agent, and build the agent the same way with `"path": ["Objective-Superintelligence-Agent"]`. The
 agent's digest is what an agent template names.
 
-As committed, `agent/tool-image.json` names the tool image built from
-this revision's `tool/`:
+As committed, `Objective-Superintelligence-Agent/tool-image.json` names the tool image built from
+this revision's `Objective-Superintelligence-Agent-Tool/`:
 `sha256:4f7386f7cb6cd8cc7bab7f6e2a05b630b399de959ef24a00e48adf3948f9b1ba`.
 A digest is only usable on a provider whose Store holds that image, so
 on another host, build both.
