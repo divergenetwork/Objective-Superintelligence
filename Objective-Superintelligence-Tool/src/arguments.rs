@@ -15,7 +15,8 @@ use serde::{Deserialize, Serialize};
 /// daemon attests it on every request: an
 /// Objective-Superintelligence agent is served `structured_decisions`,
 /// which puts a decision to the agents the call lists; every other
-/// caller is served `sum`. See [`caller`](crate::caller).
+/// caller is served `get` and `vote`, the next decision in its queue
+/// and its vote on one. See [`caller`](crate::caller).
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Arguments {}

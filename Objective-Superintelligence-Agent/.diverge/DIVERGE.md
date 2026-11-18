@@ -41,39 +41,82 @@
     ],
     "$defs": {
       "Agent": {
-        "description": "One agent asked: the template it was made from and its index among\nthe agents made from that template, which together name it once\nand for all on the daemon that holds it; that daemon, where it is\nanother; and its weight.",
-        "type": "object",
-        "properties": {
-          "template": {
-            "description": "The agent's template, by id.",
-            "type": "string"
-          },
-          "index": {
-            "description": "The agent's index among the agents made from that template.",
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0
-          },
-          "relay": {
-            "description": "The daemon the agent is on, where it is not this one: the route\nto it, as a request's `relay` is. The first ID is this\ndaemon's record of a remote daemon, and each ID after it is the\nrecord the daemon before it keeps of the next; the agent is on\nthe daemon the route ends at, and `template` and `index` are\nthat daemon's. Left out for an agent on this daemon; never\nempty.",
-            "type": "array",
-            "items": {
-              "$ref": "#/$defs/DaemonId"
+        "description": "One agent asked, of one of two kinds. Internally tagged by `type`,\nsnake case: `\"structured_decision\"` or `\"voter\"`. Each kind takes\nits own members and no other.\n\nEither kind is named by the template it was made from and its\nindex among the agents made from that template, which together\nname it once and for all on the daemon that holds it, and carries\nthe weight its answer is averaged by.",
+        "oneOf": [
+          {
+            "description": "An agent that takes structured decisions: the decision is sent\nto it as a message, and its answer is read from its log. It may\nbe on another daemon.",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "structured_decision"
+              },
+              "template": {
+                "description": "The agent's template, by id.",
+                "type": "string"
+              },
+              "index": {
+                "description": "The agent's index among the agents made from that template.",
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0
+              },
+              "relay": {
+                "description": "The daemon the agent is on, where it is not this one: the\nroute to it, as a request's `relay` is. The first ID is\nthis daemon's record of a remote daemon, and each ID after\nit is the record the daemon before it keeps of the next;\nthe agent is on the daemon the route ends at, and\n`template` and `index` are that daemon's. Left out for an\nagent on this daemon; never empty.",
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/DaemonId"
+                },
+                "minItems": 1
+              },
+              "weight": {
+                "description": "How much this agent's answer counts beside the others': a\nnumber greater than zero. Only the proportions matter:\nweights of 1 and 3 average as weights of 0.25 and 0.75 do.",
+                "type": "number",
+                "format": "double",
+                "exclusiveMinimum": 0
+              }
             },
-            "minItems": 1
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "template",
+              "index",
+              "weight"
+            ]
           },
-          "weight": {
-            "description": "How much this agent's answer counts beside the others': a\nnumber greater than zero. Only the proportions matter: weights\nof 1 and 3 average as weights of 0.25 and 0.75 do.",
-            "type": "number",
-            "format": "double",
-            "exclusiveMinimum": 0
+          {
+            "description": "An agent that votes: it declares Objective-Superintelligence-Tool\nitself, is told that a decision waits in its queue there, reads\nit with `get` and answers it with `vote`. It is on this daemon,\nalways: the tool it votes through is this daemon's, so a voter\nhas no `relay`.",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "voter"
+              },
+              "template": {
+                "description": "The agent's template, by id.",
+                "type": "string"
+              },
+              "index": {
+                "description": "The agent's index among the agents made from that template.",
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0
+              },
+              "weight": {
+                "description": "How much this agent's answer counts beside the others': a\nnumber greater than zero. Only the proportions matter:\nweights of 1 and 3 average as weights of 0.25 and 0.75 do.",
+                "type": "number",
+                "format": "double",
+                "exclusiveMinimum": 0
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "template",
+              "index",
+              "weight"
+            ]
           }
-        },
-        "additionalProperties": false,
-        "required": [
-          "template",
-          "index",
-          "weight"
         ]
       },
       "DaemonId": {
@@ -94,23 +137,35 @@ agents' answers. It takes structured decisions only: it has no chat.
 
 ```json
 {"agents": [
-  {"template": "<agent template id>", "index": 1, "weight": 3},
-  {"template": "<agent template id>", "index": 2, "weight": 1},
-  {"template": "<agent template id>", "index": 1, "weight": 1, "relay": ["<daemon id>"]}
+  {"type": "structured_decision", "template": "<agent template id>", "index": 1, "weight": 3},
+  {"type": "structured_decision", "template": "<agent template id>", "index": 1, "weight": 1, "relay": ["<daemon id>"]},
+  {"type": "voter", "template": "<agent template id>", "index": 2, "weight": 1}
 ]}
 ```
 
 The agents asked, each by its template and index, each with a `weight`
 greater than zero. At least one. Only the proportions of the weights
-matter.
+matter. Each is of one of two kinds, named by `type`:
 
-An agent on another daemon carries `relay`: the route to that daemon,
-as every daemon request's `relay` is. The first id is this daemon's
-record of a remote daemon (`daemons list`), and each id after it is
-the record the daemon before it keeps of the next. `template` and
-`index` are then the agent's on the daemon the route ends at. An agent
-on this daemon has no `relay`: an empty one, or `null`, is refused, so
-that one list of agents is one template.
+- **`structured_decision`**: an agent that takes structured decisions.
+  The decision is sent to it as it came.
+- **`voter`**: any agent that declares the
+  Objective-Superintelligence-Tool itself, with `{}`. It is told that a
+  decision waits in its queue, reads it with the tool's `get`, and
+  answers with the tool's `vote`: one pick per question, counted as
+  probability 1 for what it picked. It needs no support for structured
+  decisions.
+
+A structured decision agent on another daemon carries `relay`: the
+route to that daemon, as every daemon request's `relay` is. The first
+id is this daemon's record of a remote daemon (`daemons list`), and
+each id after it is the record the daemon before it keeps of the next.
+`template` and `index` are then the agent's on the daemon the route
+ends at. One on this daemon has no `relay`: an empty one, or `null`,
+is refused, so that one list of agents is one template.
+
+A voter is on this daemon, always: it votes through the tool, which is
+this daemon's. A `relay` on a voter is refused.
 
 ## What it does with a decision
 
@@ -139,9 +194,11 @@ that one list of agents is one template.
 
 Every modality is accepted, in the prompt, in the instructions and in
 the choices: the
-decision is passed on as it came. An agent listed that does not take a
-modality the decision uses refuses it, and is left out as a failure.
-So is an agent whose route could not be taken.
+decision is passed on as it came. A structured decision agent that
+does not take a modality the decision uses refuses it, and is left out
+as a failure. So is one whose route could not be taken. A voter reads
+the decision as JSON, with each image, audio or file as a part of its
+own, in its place.
 
 ## Dependency
 
@@ -151,5 +208,7 @@ declares it, run while it is used), 256 MiB of memory and of disk,
 with no mount and no secret. Its image is fixed in this image. The agent names
 its agents (weights left out) on every call of the tool's
 `structured_decisions`, which the tool serves to this agent's image
-alone. The tool declares `message` over any agent and `relay` over any
-remote daemon, which is all the access it has.
+alone. To every other agent that declares it, the tool serves `get`
+and `vote`, which is how a voter takes part. The tool declares
+`message` over any agent and `relay` over any remote daemon, which is
+all the access it has.

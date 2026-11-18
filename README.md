@@ -13,14 +13,16 @@ Two container images, built from the two folders here:
 | image | what it is |
 |---|---|
 | [`Objective-Superintelligence-Agent`](Objective-Superintelligence-Agent/.diverge/DIVERGE.md) | The agent. Made with a list of agents and a weight for each. Takes structured decisions only, no chat. |
-| [`Objective-Superintelligence-Tool`](Objective-Superintelligence-Tool/.diverge/DIVERGE.md) | The agent's one dependency tool, with no arguments. To the agent, it puts a decision to the agents the agent names and returns each one's answer, or that it failed. To any other caller, it serves `sum`, which adds two numbers. |
+| [`Objective-Superintelligence-Tool`](Objective-Superintelligence-Tool/.diverge/DIVERGE.md) | The agent's one dependency tool, with no arguments. To the agent, it puts a decision to the agents the agent names and returns each one's answer, or that it failed. To any other agent that declares it, it serves `get` and `vote`: the agent's queue of decisions to vote on, and its vote. |
 
 ## How a decision is answered
 
 1. You send the agent a structured decision: a prompt and questions of
    type `noul`, `choice` or `score`.
-2. The agent calls the tool, which sends the same decision to every
-   agent in the list, watches each, and returns each one's answers.
+2. The agent calls the tool, which puts the same decision to every
+   agent in the list and returns each one's answers. A structured
+   decision agent is sent the decision. A voter finds it in its queue
+   in the tool, and votes there.
 3. Agents that failed, or whose answers do not fit the questions, are
    left out.
 4. The agent answers each question with the weighted average of the
@@ -29,33 +31,41 @@ Two container images, built from the two folders here:
 
 ## Making one
 
-The agent's template arguments list the agents to ask, each by the id
-of the template it was made from and its index, with its weight:
+The agent's template arguments list the agents to ask, each by its
+kind, the id of the template it was made from and its index, with its
+weight:
 
 ```json
 {"agents": [
-  {"template": "<agent template id>", "index": 1, "weight": 3},
-  {"template": "<agent template id>", "index": 2, "weight": 1}
+  {"type": "structured_decision", "template": "<agent template id>", "index": 1, "weight": 3},
+  {"type": "voter", "template": "<agent template id>", "index": 2, "weight": 1}
 ]}
 ```
+
+There are two kinds:
+
+- A `structured_decision` agent accepts structured decisions itself.
+  It may be another Objective-Superintelligence agent.
+- A `voter` is any agent that declares the Objective-Superintelligence
+  tool as a dependency, with `{}` arguments, lazy and global. It is
+  told when a decision waits for it, reads it with the tool's `get`,
+  and answers with `vote`: one pick per question.
 
 A weight is any number greater than zero. The tool is declared by the
 agent itself, with no arguments; the agent names its agents on each
 call. You do not create or attach it.
 
-An agent on another daemon is listed with the route to that daemon,
-`relay`: the ids of the remote daemons to go through, the first one
+A structured decision agent on another daemon is listed with the route
+to that daemon, `relay`: the ids of the remote daemons to go through, the first one
 this daemon's (`daemons list`), as any relayed request names them. Its
 template and index are then the ones it has on that daemon:
 
 ```json
-{"template": "<agent template id>", "index": 1, "weight": 1, "relay": ["<daemon id>"]}
+{"type": "structured_decision", "template": "<agent template id>", "index": 1, "weight": 1, "relay": ["<daemon id>"]}
 ```
 
-An agent on this daemon has no `relay`. An empty one is refused.
-
-Every agent listed must itself accept structured decisions. An agent
-listed may be another Objective-Superintelligence agent.
+An agent on this daemon has no `relay`. An empty one is refused. A
+voter is always on this daemon, and a `relay` on one is refused.
 
 ## Building
 
