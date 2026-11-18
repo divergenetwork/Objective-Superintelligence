@@ -31,16 +31,21 @@ Two container images, built from the two folders here:
 
 ## Making one
 
-The agent's template arguments list the agents to ask, each by its
-kind, the id of the template it was made from and its index, with its
-weight:
+The agent's template arguments name the tool's image, and list the
+agents to ask, each by its kind, the id of the template it was made
+from and its index, with its weight:
 
 ```json
-{"agents": [
+{"tool": {"digest": "sha256:<the tool image's digest>"},
+ "agents": [
   {"type": "structured_decision", "template": "<agent template id>", "index": 1, "weight": 3},
   {"type": "voter", "template": "<agent template id>", "index": 2, "weight": 1}
 ]}
 ```
+
+`tool` is the Objective-Superintelligence-Tool image that goes with
+the agent image: see "Images" below. A tool built for another agent
+image does not serve the agent, and every decision fails.
 
 There are two kinds:
 
@@ -52,8 +57,8 @@ There are two kinds:
   and answers with `vote`: one pick per question.
 
 A weight is any number greater than zero. The tool is declared by the
-agent itself, with no arguments; the agent names its agents on each
-call. You do not create or attach it.
+agent itself, from the image `tool` names, with no arguments; the
+agent names its agents on each call. You do not create or attach it.
 
 A structured decision agent on another daemon is listed with the route
 to that daemon, `relay`: the ids of the remote daemons to go through, the first one
@@ -67,24 +72,44 @@ template and index are then the ones it has on that daemon:
 An agent on this daemon has no `relay`. An empty one is refused. A
 voter is always on this daemon, and a `relay` on one is refused.
 
+## Images
+
+Each image holds the other's digest in some way, and an image cannot
+hold a digest that is computed over itself. So the two are tied in one
+direction only:
+
+- The tool's image holds the agent's digest. The tool serves
+  `structured_decisions` to that agent image alone.
+- The agent's image holds nothing of the tool. The tool's digest is
+  given in each agent template's arguments, as `tool`.
+
+The pair to use together:
+
+| image | digest |
+|---|---|
+| `Objective-Superintelligence-Agent` | not built yet |
+| `Objective-Superintelligence-Tool` | not built yet |
+
+A digest is only usable on a provider whose Store holds that image, or
+that can fetch it. On another host, build both.
+
 ## Building
 
 Each folder is a Rust crate with its own `Containerfile`, whose build
-context is that folder. Build the tool first, with Diverge itself:
+context is that folder. Build the agent first, with Diverge itself:
 
 ```bash
 diverge run images build '{"provider": <provider identity>,
-  "containerfile": "<the text of Objective-Superintelligence-Tool/Containerfile>",
-  "context": {"volume": "<a volume holding this repository>", "path": ["Objective-Superintelligence-Tool"]}}'
+  "containerfile": "<the text of Objective-Superintelligence-Agent/Containerfile>",
+  "context": {"volume": "<a volume holding this repository>", "path": ["Objective-Superintelligence-Agent"]}}'
 # … {"built":{"digest":"sha256:…","bytes":…}}
 ```
 
-Put that digest in `Objective-Superintelligence-Agent/tool-image.json`, which is compiled into the
-agent, and build the agent the same way with `"path": ["Objective-Superintelligence-Agent"]`. The
-agent's digest is what an agent template names.
+Put that digest in `Objective-Superintelligence-Tool/src/caller.rs`, as
+`SUPERINTELLIGENCE_AGENT`, and build the tool the same way with
+`"path": ["Objective-Superintelligence-Tool"]`. The agent's digest is
+what an agent template names as its image, and the tool's digest is
+what its arguments name as `tool`.
 
-As committed, `Objective-Superintelligence-Agent/tool-image.json` names the tool image built from
-an earlier revision's tool, from before it took no arguments:
-`sha256:4f7386f7cb6cd8cc7bab7f6e2a05b630b399de959ef24a00e48adf3948f9b1ba`.
-A digest is only usable on a provider whose Store holds that image, so
-on another host, build both.
+As committed, `SUPERINTELLIGENCE_AGENT` is a placeholder that no image
+has, so a tool built from it serves `structured_decisions` to no one.
