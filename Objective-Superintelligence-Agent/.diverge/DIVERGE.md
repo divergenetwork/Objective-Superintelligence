@@ -23,13 +23,9 @@
   "schema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Arguments",
-    "description": "The arguments the agent is made with: the image of the tool it\nasks through, and the agents every decision is put to, each with\nthe weight its answer is averaged by.",
+    "description": "The arguments the agent is made with: the agents every decision is\nput to, each with the weight its answer is averaged by.",
     "type": "object",
     "properties": {
-      "tool": {
-        "description": "The image of the Objective-Superintelligence-Tool, which the\nagent declares as its one dependency: its digest, and where\nits bytes may be fetched, if anywhere.\n\nIt is an argument, and not a part of this image, because the\ntool's image holds this image's digest: the tool serves\n`structured_decisions` to this image alone. Were this image to\nhold the tool's digest too, each digest would be a hash over\nthe other, and neither image could be built. So the agent is\nbuilt first, the tool is built knowing the agent's digest, and\nthe tool's digest is given here. A tool built for another\nagent image serves this agent `get` and `vote` only, and every\ndecision fails.",
-        "$ref": "#/$defs/Image"
-      },
       "agents": {
         "description": "The agents asked. At least one.",
         "type": "array",
@@ -41,48 +37,9 @@
     },
     "additionalProperties": false,
     "required": [
-      "tool",
       "agents"
     ],
     "$defs": {
-      "Image": {
-        "description": "An image, by its manifest digest and the references under which\nits bytes may be fetched.",
-        "type": "object",
-        "properties": {
-          "digest": {
-            "description": "The manifest digest, `<algorithm>:<hex>`.",
-            "type": "string"
-          },
-          "references": {
-            "description": "Where the bytes may be fetched, each a registry and a path\nthere. Absent when there are none.",
-            "type": "array",
-            "items": {
-              "$ref": "#/$defs/Reference"
-            }
-          }
-        },
-        "required": [
-          "digest"
-        ]
-      },
-      "Reference": {
-        "description": "One place the bytes an image's digest names may be fetched from: a\nregistry, and the repository path there.",
-        "type": "object",
-        "properties": {
-          "registry": {
-            "description": "The registry's host: `docker.io`, `ghcr.io`,\n`registry.example.com:5000`. No scheme and no path.",
-            "type": "string"
-          },
-          "name": {
-            "description": "The repository path at that registry. No host and no tag.",
-            "type": "string"
-          }
-        },
-        "required": [
-          "registry",
-          "name"
-        ]
-      },
       "Agent": {
         "description": "One agent asked, of one of two kinds. Internally tagged by `type`,\nsnake case: `\"structured_decision\"` or `\"voter\"`. Each kind takes\nits own members and no other.\n\nEither kind is named by the template it was made from and its\nindex among the agents made from that template, which together\nname it once and for all on the daemon that holds it, and carries\nthe weight its answer is averaged by.",
         "oneOf": [
@@ -179,30 +136,24 @@ agents' answers. It takes structured decisions only: it has no chat.
 ## Arguments
 
 ```json
-{"tool": {"digest": "sha256:<the tool image's digest>"},
- "agents": [
+{"agents": [
   {"type": "structured_decision", "template": "<agent template id>", "index": 1, "weight": 3},
   {"type": "structured_decision", "template": "<agent template id>", "index": 1, "weight": 1, "relay": ["<daemon id>"]},
   {"type": "voter", "template": "<agent template id>", "index": 2, "weight": 1}
 ]}
 ```
 
-`tool` is the image of the Objective-Superintelligence-Tool: its
-`digest`, and optionally `references`, the registries its bytes may be
-fetched from. This document cannot state the digest. The tool's image
-holds this image's digest, so it is built after this image, and after
-this document. The digest to use with a published agent image is
-stated in the repository's README. A tool built for another agent
-image does not serve this agent, and every decision fails.
-
-`agents` is the agents asked, each by its template and index, each with a `weight`
+The agents asked, each by its template and index, each with a `weight`
 greater than zero. At least one. Only the proportions of the weights
 matter. Each is of one of two kinds, named by `type`:
 
 - **`structured_decision`**: an agent that takes structured decisions.
   The decision is sent to it as it came.
 - **`voter`**: any agent that declares the
-  Objective-Superintelligence-Tool itself, with `{}`. It is told that a
+  Objective-Superintelligence-Tool itself, lazy and global, with
+  `{"superintelligence_agent_digest": "<this image's digest>"}`: the
+  arguments this agent declares it with, so that the two share one
+  tool. It is told that a
   decision waits in its queue, reads it with the tool's `get`, and
   answers with the tool's `vote`: one pick per question, counted as
   probability 1 for what it picked. It needs no support for structured
@@ -254,14 +205,16 @@ own, inside the quoted string it belongs to.
 
 ## Dependency
 
-One, always: the Objective-Superintelligence-Tool, made with no
-arguments, `{}`, lazy and global (one tool for every agent that
-declares it, run while it is used), 256 MiB of memory and of disk,
-with no mount and no secret. Its image is the one the arguments name
-as `tool`. The agent names
+One, always: the Objective-Superintelligence-Tool, made with
+`{"superintelligence_agent_digest": "<this image's digest>"}`, lazy
+and global (one tool for every agent that declares it with the same
+arguments, run while it is used), 256 MiB of memory and of disk, with
+no mount and no secret. Its image is fixed in this image. The agent is
+told its own image's digest at its registration, and gives it to the
+tool, which serves `structured_decisions` to an agent of that image.
+The agent names
 its agents (weights left out) on every call of the tool's
-`structured_decisions`, which the tool serves to this agent's image
-alone. To every other agent that declares it, the tool serves `get`
+`structured_decisions`. To every other agent that declares it, the tool serves `get`
 and `vote`, which is how a voter takes part. The tool declares
 `message` over any agent and `relay` over any remote daemon, which is
 all the access it has.

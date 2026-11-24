@@ -13,7 +13,7 @@ Two container images, built from the two folders here:
 | image | what it is |
 |---|---|
 | [`Objective-Superintelligence-Agent`](Objective-Superintelligence-Agent/.diverge/DIVERGE.md) | The agent. Made with a list of agents and a weight for each. Takes structured decisions only, no chat. |
-| [`Objective-Superintelligence-Tool`](Objective-Superintelligence-Tool/.diverge/DIVERGE.md) | The agent's one dependency tool, with no arguments. To the agent, it puts a decision to the agents the agent names and returns each one's answer, or that it failed. To any other agent that declares it, it serves `get` and `vote`: the agent's queue of decisions to vote on, and its vote. |
+| [`Objective-Superintelligence-Tool`](Objective-Superintelligence-Tool/.diverge/DIVERGE.md) | The agent's one dependency tool, made with the agent image's digest. To the agent, it puts a decision to the agents the agent names and returns each one's answer, or that it failed. To any other agent that declares it, it serves `get` and `vote`: the agent's queue of decisions to vote on, and its vote. |
 
 ## How a decision is answered
 
@@ -31,34 +31,31 @@ Two container images, built from the two folders here:
 
 ## Making one
 
-The agent's template arguments name the tool's image, and list the
-agents to ask, each by its kind, the id of the template it was made
-from and its index, with its weight:
+The agent's template arguments list the agents to ask, each by its
+kind, the id of the template it was made from and its index, with its
+weight:
 
 ```json
-{"tool": {"digest": "sha256:<the tool image's digest>"},
- "agents": [
+{"agents": [
   {"type": "structured_decision", "template": "<agent template id>", "index": 1, "weight": 3},
   {"type": "voter", "template": "<agent template id>", "index": 2, "weight": 1}
 ]}
 ```
-
-`tool` is the Objective-Superintelligence-Tool image that goes with
-the agent image: see "Images" below. A tool built for another agent
-image does not serve the agent, and every decision fails.
 
 There are two kinds:
 
 - A `structured_decision` agent accepts structured decisions itself.
   It may be another Objective-Superintelligence agent.
 - A `voter` is any agent that declares the Objective-Superintelligence
-  tool as a dependency, with `{}` arguments, lazy and global. It is
+  tool as a dependency, lazy and global, with the agent image's digest
+  as its argument: `{"superintelligence_agent_digest": "sha256:…"}`.
+  See "Images" below. It is
   told when a decision waits for it, reads it with the tool's `get`,
   and answers with `vote`: one pick per question.
 
 A weight is any number greater than zero. The tool is declared by the
-agent itself, from the image `tool` names, with no arguments; the
-agent names its agents on each call. You do not create or attach it.
+agent itself, which gives it its own image's digest; the agent names
+its agents on each call. You do not create or attach it.
 
 A structured decision agent on another daemon is listed with the route
 to that daemon, `relay`: the ids of the remote daemons to go through, the first one
@@ -74,42 +71,41 @@ voter is always on this daemon, and a `relay` on one is refused.
 
 ## Images
 
-Each image holds the other's digest in some way, and an image cannot
-hold a digest that is computed over itself. So the two are tied in one
-direction only:
-
-- The tool's image holds the agent's digest. The tool serves
-  `structured_decisions` to that agent image alone.
-- The agent's image holds nothing of the tool. The tool's digest is
-  given in each agent template's arguments, as `tool`.
+The agent's image holds the tool's digest, and declares the tool from
+it. The tool's image holds nothing of the agent: the agent is told its
+own digest when it starts, and gives it to the tool as the tool's
+argument. So the tool is built first, and the agent second.
 
 The pair to use together:
 
 | image | digest |
 |---|---|
-| `Objective-Superintelligence-Agent` | not built yet |
 | `Objective-Superintelligence-Tool` | not built yet |
+| `Objective-Superintelligence-Agent` | not built yet |
 
-A digest is only usable on a provider whose Store holds that image, or
-that can fetch it. On another host, build both.
+A voter needs both: it declares the tool's image, with the agent's
+digest as its argument. A digest is only usable on a provider whose
+Store holds that image, or that can fetch it. On another host, build
+both.
 
 ## Building
 
 Each folder is a Rust crate with its own `Containerfile`, whose build
-context is that folder. Build the agent first, with Diverge itself:
+context is that folder. Build the tool first, with Diverge itself:
 
 ```bash
 diverge run images build '{"provider": <provider identity>,
-  "containerfile": "<the text of Objective-Superintelligence-Agent/Containerfile>",
-  "context": {"volume": "<a volume holding this repository>", "path": ["Objective-Superintelligence-Agent"]}}'
+  "containerfile": "<the text of Objective-Superintelligence-Tool/Containerfile>",
+  "context": {"volume": "<a volume holding this repository>", "path": ["Objective-Superintelligence-Tool"]},
+  "platforms": ["linux/amd64"]}'
 # … {"built":{"digest":"sha256:…","bytes":…}}
 ```
 
-Put that digest in `Objective-Superintelligence-Tool/src/caller.rs`, as
-`SUPERINTELLIGENCE_AGENT`, and build the tool the same way with
-`"path": ["Objective-Superintelligence-Tool"]`. The agent's digest is
-what an agent template names as its image, and the tool's digest is
-what its arguments name as `tool`.
+Put that digest in `Objective-Superintelligence-Agent/tool-image.json`,
+which is compiled into the agent, and build the agent the same way
+with `"path": ["Objective-Superintelligence-Agent"]`. The agent's
+digest is what an agent template names as its image.
 
-As committed, `SUPERINTELLIGENCE_AGENT` is a placeholder that no image
-has, so a tool built from it serves `structured_decisions` to no one.
+As committed, `Objective-Superintelligence-Agent/tool-image.json` names
+a tool image built from an earlier revision, which took no arguments:
+`sha256:4f7386f7cb6cd8cc7bab7f6e2a05b630b399de959ef24a00e48adf3948f9b1ba`.

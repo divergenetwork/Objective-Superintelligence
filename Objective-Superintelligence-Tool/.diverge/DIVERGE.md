@@ -5,24 +5,47 @@
   "schema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Arguments",
-    "description": "The arguments the tool is made with.\n\nNone: the tool is the same for every agent that declares it, and\nwhat it serves is decided by who calls, not by how it was made.\n`{}` is the one value; any member is refused, so a misspelled\nsetting is never silently ignored.\n\n# How it runs\n\nAs a dependency tool. What it serves depends on its caller, as the\ndaemon attests it on every request: an\nObjective-Superintelligence agent is served `structured_decisions`,\nwhich puts a decision to the agents the call lists; every other\ncaller is served `get` and `vote`, the next decision in its queue\nand its vote on one. See [`caller`](crate::caller).",
+    "description": "The arguments the tool is made with.\n\n# How it runs\n\nAs a dependency tool. What it serves depends on its caller, as the\ndaemon attests it on every request: an agent whose image digest is\n[`superintelligence_agent_digest`](Self::superintelligence_agent_digest)\nis served `structured_decisions`, which puts a decision to the\nagents the call lists; every other caller is served `get` and\n`vote`, the next decision in its queue and its vote on one. See\n[`caller`](crate::caller).\n\n# Who gives the argument\n\nAn Objective-Superintelligence agent declares the tool itself, and\ngives its own image's digest, which it is told at its\nregistration. A voter declares the tool with the same argument:\nthe tool is one for every agent that declares it with the same\narguments, so only then is the voter's tool the one the agent\ncalls, and the queue it reads the one the agent's decisions are\nput in.",
     "type": "object",
-    "additionalProperties": false
+    "properties": {
+      "superintelligence_agent_digest": {
+        "description": "The image of the Objective-Superintelligence agent this tool\nserves `structured_decisions` to: its manifest digest,\n`<algorithm>:<hex>`. An agent of any other image is served\n`get` and `vote`.",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "superintelligence_agent_digest"
+    ]
   }
 }
 ---
 # Objective-Superintelligence-Tool
 
-The dependency tool of the Objective-Superintelligence agent. It takes
-no arguments, and serves one of two sets of tools by who calls it.
+The dependency tool of the Objective-Superintelligence agent. It serves
+one of two sets of tools by who calls it.
 
 ## Arguments
 
 ```json
-{}
+{"superintelligence_agent_digest": "sha256:<the agent image's digest>"}
 ```
 
-None. Any member is refused.
+`superintelligence_agent_digest` is the image digest of the
+Objective-Superintelligence agent the tool serves `structured_decisions`
+to. Any other member is refused.
+
+- An Objective-Superintelligence agent declares the tool itself, and
+  gives its own image's digest. Nobody writes it by hand there.
+- A voter declares the tool with the same argument, and so must be
+  given that digest. The tool is one for every agent that declares it
+  with the same arguments. A voter that declares it with another
+  digest has another tool, with another queue, and no decision
+  reaches it.
+
+This document cannot state the digest: the agent's image holds this
+image's digest, so it is built after this image. The digests that go
+together are stated in the repository's README.
 
 ## Who gets what
 
@@ -32,7 +55,7 @@ itself:
 
 | caller | served |
 |---|---|
-| An agent whose image is the Objective-Superintelligence agent's, whatever its template, index or name | `structured_decisions` only |
+| An agent whose image digest is `superintelligence_agent_digest`, whatever its template, index or name | `structured_decisions` only |
 | Anyone else | `get` and `vote` only |
 
 A tool of the other mode is no tool to the caller: listing does not
@@ -103,10 +126,12 @@ returns when every agent has answered or its run has ended.
 
 ## Voters
 
-A voter is an ordinary agent that declares this tool itself, with
-`{}`, so that it is served `get` and `vote`. It needs no support for
-structured decisions. An agent that does not declare the tool cannot
-reach it, and fails every decision it is listed in as a voter.
+A voter is an ordinary agent that declares this tool itself, lazy and
+global, with the arguments the Objective-Superintelligence agent
+declares it with, so that it is served `get` and `vote` by the same
+tool. It needs no support for structured decisions. An agent that does
+not declare the tool, or declares it with another digest, fails every
+decision it is listed in as a voter.
 
 What happens to a voter when `structured_decisions` lists it:
 
@@ -245,9 +270,14 @@ Declared at registration:
 ]
 ```
 
-The tool takes no arguments and is one tool for every agent that
-declares it, so it cannot know at registration which agents a call
-will list, and each grant reaches `"any"`.
+The tool is one tool for every agent that declares it, and its
+arguments name none of the agents it asks, so it cannot know at
+registration which agents a call will list, and each grant reaches
+`"any"`.
+
+Any agent may declare the tool naming its own image's digest, and is
+then served `structured_decisions` by its own tool, with these grants
+behind it.
 
 - `message` over agents reaches the agents on this daemon: the
   structured decision agents asked, and the voters told.
