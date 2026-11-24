@@ -1,10 +1,11 @@
 //! `tool`, as a tool container: what it serves depends on who calls.
 //!
-//! The tool takes no arguments. Every request it receives carries the
-//! caller the daemon attested, and the tool serves one of two modes by
-//! it — see [`caller`]:
+//! The tool takes one argument: the image digest of the
+//! Objective-Superintelligence agent it serves. Every request it
+//! receives carries the caller the daemon attested, and the tool
+//! serves one of two modes by it — see [`caller`]:
 //!
-//! - **An Objective-Superintelligence agent** is served
+//! - **An agent of that image** is served
 //!   `structured_decisions`, which takes the agents to ask, each by
 //!   its template and index and, for one on another daemon, the route
 //!   to it, with a decision — a prompt and typed questions — and

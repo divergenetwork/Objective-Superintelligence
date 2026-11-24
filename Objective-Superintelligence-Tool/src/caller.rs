@@ -6,11 +6,7 @@ use rmcp::model::{MetaObject, RequestMetaObject};
 use rmcp::service::RequestContext;
 use rmcp::RoleServer;
 
-/// The image digest of the Objective-Superintelligence agent.
-///
-/// A placeholder until the agent's image is built: no image has this
-/// digest, so until it is replaced every caller is served [`Mode::Other`].
-pub const SUPERINTELLIGENCE_AGENT: &str = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
+use crate::register::registered;
 
 /// What the tool serves a caller: one of two sets of tools, and never
 /// both.
@@ -32,18 +28,22 @@ pub enum Mode {
 ///    daemon's stamp under its key of the request's `_meta`, never
 ///    from anything the request says of itself.
 /// 2. **An Objective-Superintelligence agent is told by its image.**
-///    An agent whose image digest is [`SUPERINTELLIGENCE_AGENT`] is
-///    [`Mode::Superintelligence`], whatever its template, index or
-///    name.
+///    An agent whose image digest is the one the tool was made with,
+///    its arguments'
+///    [`superintelligence_agent_digest`](crate::arguments::Arguments::superintelligence_agent_digest),
+///    is [`Mode::Superintelligence`], whatever its template, index or
+///    name. Before the tool is registered it has no such digest, and
+///    no caller is one.
 /// 3. **Every other agent is [`Mode::Other`], with its key**: its
 ///    template and index, which name its queue.
 /// 4. **Everyone else is [`Mode::Other`], with no key**: a client over
 ///    a connect, and a request with no attestation or one that does
 ///    not read as a caller.
 pub fn mode(context: &RequestContext<RoleServer>, own: Option<&RequestMetaObject>) -> Mode {
+    let superintelligence = registered().map(|arguments| arguments.superintelligence_agent_digest.as_str());
     match attestation::request(meta(context, own)) {
         // Rule 2.
-        Ok(Caller::Agent(agent)) if agent.image.digest == SUPERINTELLIGENCE_AGENT => Mode::Superintelligence,
+        Ok(Caller::Agent(agent)) if superintelligence == Some(agent.image.digest.as_str()) => Mode::Superintelligence,
         // Rule 3.
         Ok(Caller::Agent(agent)) => Mode::Other(Some(agent.key)),
         // Rule 4.

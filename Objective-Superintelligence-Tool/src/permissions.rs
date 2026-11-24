@@ -6,10 +6,10 @@ use diverge_sdk::shared::permission::{Grant, Reach, daemons};
 /// The tool's permissions: what reaching any agent a call may list
 /// takes, and nothing else. The rules:
 ///
-/// 1. **Nothing is known at registration.** The tool takes no
-///    arguments, and the agents a decision is put to come with each
-///    call of `structured_decisions`. So nothing can be listed, and
-///    each grant reaches `"any"`.
+/// 1. **Nothing is known at registration.** The tool's arguments name
+///    no agent it asks: the agents a decision is put to come with
+///    each call of `structured_decisions`. So nothing can be listed,
+///    and each grant reaches `"any"`.
 /// 2. **An agent on this daemon is reached by `message`**, over
 ///    agents. Watching a message is part of sending it, and asks for
 ///    nothing more.

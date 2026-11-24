@@ -10,18 +10,24 @@ use tokio::sync::OnceCell;
 use crate::arguments::Arguments;
 use crate::permissions::permissions;
 
-/// Whether the one registration has happened.
-static REGISTERED: OnceCell<()> = OnceCell::const_new();
+/// The arguments of the one registration, once it has happened.
+static REGISTERED: OnceCell<Arguments> = OnceCell::const_new();
 
-/// `POST /register`: arguments that are not [`Arguments`], `{}`, are
+/// What the tool was registered with; none before it was.
+pub fn registered() -> Option<&'static Arguments> {
+    REGISTERED.get()
+}
+
+/// `POST /register`: arguments that are not [`Arguments`] are
 /// `400`; a second registration, whatever it carries, is `409`;
 /// otherwise `200` with the tool's [`permissions`]. It depends on
 /// nothing and takes no secret.
 pub async fn register(Json(request): Json<register::request::Request>) -> Result<(StatusCode, Json<Response>), (StatusCode, Json<Value>)> {
-    if let Err(error) = serde_json::from_value::<Arguments>(request.arguments) {
-        return Err((StatusCode::BAD_REQUEST, Json(json!({ "kind": "arguments", "error": error.to_string() }))));
-    }
-    match REGISTERED.set(()) {
+    let arguments = match serde_json::from_value::<Arguments>(request.arguments) {
+        Ok(arguments) => arguments,
+        Err(error) => return Err((StatusCode::BAD_REQUEST, Json(json!({ "kind": "arguments", "error": error.to_string() })))),
+    };
+    match REGISTERED.set(arguments) {
         Ok(()) => Ok((
             StatusCode::OK,
             Json(Response {
